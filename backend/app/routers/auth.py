@@ -33,11 +33,14 @@ from app.services.auth_service import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
+    decode_token,
+    get_user_by_id,
     refresh_access_token,
     register_user,
     verify_email_token,
 )
 from app.config import settings
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +97,14 @@ async def register(
     """
     try:
         user = await register_user(db, body.email, body.password)
+        logger.info("New user registered: %s (id=%s)", user.email, user.id)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-
-    logger.info("New user registered: %s (id=%s)", user.email, user.id)
+        # Prevent Account Enumeration: Log the conflict internally but return standard success.
+        logger.warning("Registration blocked (Account Enumeration Mitigation): %s", str(exc))
+        return RegisterResponse(
+            message="Registration successful. Please check your email to verify your account.",
+            user_id="pending-verification-state",  # Obfuscated
+        )
 
     # In a full deployment, send user.verify_token by email here.
     # For the prototype, we log it so developers can verify manually.
@@ -184,10 +191,6 @@ async def refresh(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
 
-    # Decode to get user info for the response
-    from app.services.auth_service import decode_token
-    import uuid
-
     try:
         payload = decode_token(new_access)
         user_id = uuid.UUID(payload["sub"])
@@ -195,7 +198,6 @@ async def refresh(
     except Exception:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token decode error")
 
-    from app.services.auth_service import get_user_by_id
     user = await get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")

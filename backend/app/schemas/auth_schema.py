@@ -38,7 +38,7 @@ class RegisterRequest(BaseModel):
 
 class RegisterResponse(BaseModel):
     message: str = "Registration successful. Please check your email to verify your account."
-    user_id: uuid.UUID
+    user_id: uuid.UUID | str
 
 
 # ── Login ──────────────────────────────────────────────────────────────────────

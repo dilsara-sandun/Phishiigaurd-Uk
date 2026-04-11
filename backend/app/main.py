@@ -161,7 +161,7 @@ def create_app() -> FastAPI:
     # ── CORS ─────────────────────────────────────────────────────────────────
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[settings.ALLOWED_ORIGIN],
+        allow_origins=settings.ALLOWED_ORIGINS,
         allow_credentials=True,   # required for httpOnly cookie auth
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Accept"],

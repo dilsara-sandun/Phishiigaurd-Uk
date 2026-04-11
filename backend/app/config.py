@@ -11,6 +11,7 @@ from typing import Literal
 
 from pydantic import AnyHttpUrl, EmailStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import secrets
 
 
 class Settings(BaseSettings):
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # ── Application ────────────────────────────────────────────────────────────
@@ -39,14 +41,19 @@ class Settings(BaseSettings):
     STATS_CACHE_TTL_SECONDS: int = 300       # 5 minutes
 
     # ── Auth / JWT ─────────────────────────────────────────────────────────────
-    SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION_USE_SECRETS_GENERATE"
+    # If no valid env var or config is found, generate an unguessable runtime key
+    SECRET_KEY: str = secrets.token_urlsafe(32)
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     EMAIL_VERIFY_TOKEN_EXPIRE_HOURS: int = 24
 
     # ── CORS ───────────────────────────────────────────────────────────────────
-    ALLOWED_ORIGIN: str = "http://localhost:5173"   # Vite dev server
+    ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+    ]
 
     # ── Rate limiting ─────────────────────────────────────────────────────────
     SCAN_RATE_LIMIT: str = "20/hour"                # per authenticated user

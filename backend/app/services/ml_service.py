@@ -259,14 +259,18 @@ def load_models() -> None:
         return
 
     try:
-        _state.model = joblib.load(xgb_path)
-        logger.info("XGBoost model loaded from %s", xgb_path)
+        if xgb_path.stat().st_size > 0:
+            _state.model = joblib.load(xgb_path)
+            logger.info("XGBoost model loaded from %s", xgb_path)
+            _state.loaded = True
+        else:
+            logger.warning("XGBoost model file is empty or missing at %s. Using heuristic fallback.", xgb_path)
 
-        if shap_path.exists():
+        if shap_path.exists() and shap_path.stat().st_size > 0:
             _state.shap_explainer = joblib.load(shap_path)
             logger.info("SHAP explainer loaded from %s", shap_path)
         else:
-            logger.warning("SHAP explainer not found at %s — explanations will be unavailable", shap_path)
+            logger.warning("SHAP explainer missing or empty at %s — explanations will be unavailable", shap_path)
 
         if feat_path.exists():
             with open(feat_path) as fh:

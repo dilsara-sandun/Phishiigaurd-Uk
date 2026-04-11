@@ -1,5 +1,5 @@
 import React, { createContext, useState } from 'react'
-import { scanUrl as apiScanUrl } from '../services/scanService'
+import { scanUrl as apiScanUrl, scanDomain as apiScanDomain, scanEmail as apiScanEmail } from '../services/scanService'
 import toast from 'react-hot-toast'
 
 export const ScanContext = createContext(null)
@@ -24,8 +24,40 @@ export const ScanProvider = ({ children }) => {
     }
   }
 
+  const scanDomain = async (domain) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await apiScanDomain(domain)
+      setLoading(false)
+      return result
+    } catch (err) {
+      setLoading(false)
+      const msg = err.response?.data?.detail || 'Failed to scan Domain'
+      setError(msg)
+      toast.error(msg)
+      throw err
+    }
+  }
+
+  const scanEmail = async (text) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await apiScanEmail(text)
+      setLoading(false)
+      return result
+    } catch (err) {
+      setLoading(false)
+      const msg = err.response?.data?.detail || 'Failed to scan Email'
+      setError(msg)
+      toast.error(msg)
+      throw err
+    }
+  }
+
   return (
-    <ScanContext.Provider value={{ scanUrl, loading, error }}>
+    <ScanContext.Provider value={{ scanUrl, scanDomain, scanEmail, loading, error }}>
       {children}
     </ScanContext.Provider>
   )

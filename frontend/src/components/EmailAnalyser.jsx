@@ -1,9 +1,19 @@
 import React, { useState } from 'react'
 import { FileText, Upload, ShieldAlert, Cpu } from 'lucide-react'
+import { useScan } from '@/hooks/useScan'
+import AIExplanation from './AIExplanation'
 
 export default function EmailAnalyser() {
   const [content, setContent] = useState('')
   const [isHovering, setIsHovering] = useState(false)
+  const { scanEmail, loading } = useScan()
+  const [result, setResult] = useState(null)
+
+  const handleAnalyse = async () => {
+    if (!content.trim()) return
+    const res = await scanEmail(content)
+    setResult(res)
+  }
 
   return (
     <div className="space-y-6">
@@ -29,24 +39,34 @@ export default function EmailAnalyser() {
             onChange={(e) => setContent(e.target.value)}
             className="textarea-field min-h-[200px]"
             placeholder="Return-Path: <spoofed@lloydsbanks.com>&#10;Received: from mail.attacker.net...&#10;&#10;Dear Customer,&#10;Your account has been restricted..."
+            disabled={loading}
           />
         </div>
         
         <div className="mt-4 flex justify-end">
-          <button className="btn-primary" disabled={!content.trim()}>
-            <Cpu size={16} /> Run NLP Analysis
+          <button onClick={handleAnalyse} disabled={!content.trim() || loading} className="btn-primary">
+            <Cpu size={16} /> {loading ? 'Analysing...' : 'Run NLP Analysis'}
           </button>
         </div>
       </div>
 
-      {/* Placeholders for future feature expansion */}
-      <div className="glass-card p-6 opacity-60">
-        <div className="flex items-center gap-3 text-slate-400 mb-4">
-          <ShieldAlert size={18} />
-          <h3 className="font-semibold text-white">Analysis Status</h3>
+      {result && (
+        <div className="animate-fade-in space-y-6">
+          <div className="glass-card flex p-6 gap-6 items-center">
+             <div className="flex-1">
+               <h3 className="text-2xl font-bold text-white mb-1">
+                 {result.overall_label === 'phishing' ? 'Phishing Detected' : result.overall_label === 'suspicious' ? 'Suspicious Email' : 'Safe Email'}
+               </h3>
+               <p className="text-sm text-slate-400">Combined NLP & Embedded URL Threat Check</p>
+             </div>
+             <div className="flex flex-col items-end">
+               <span className="text-4xl font-black text-brand-400">{result.overall_score_pct}%</span>
+               <span className="text-xs text-slate-500 font-mono tracking-wider uppercase">Threat Level</span>
+             </div>
+          </div>
+          <AIExplanation explanation={result.explanation} loading={loading} />
         </div>
-        <p className="text-sm">NLP classification module pending deployment. Currently utilizing URL features via extraction.</p>
-      </div>
+      )}
     </div>
   )
 }
