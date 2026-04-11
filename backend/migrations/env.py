@@ -16,7 +16,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import async_engine_from_config, create_async_engine
 
 # ── Path fix: ensure the backend/ directory is on sys.path so we can
 #    import app.* from the migrations/ directory.
@@ -79,9 +79,10 @@ async def run_async_migrations() -> None:
     """
     Create an async engine and run migrations in the event loop.
     """
-    connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+    # For async migrations, we use the async URL
+    url = settings.DATABASE_URL
+    connectable = create_async_engine(
+        url,
         poolclass=pool.NullPool,
     )
     async with connectable.connect() as connection:
