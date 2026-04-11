@@ -10,6 +10,7 @@ from app.models.news_cache import NewsCache
 from app.models.scan import Scan
 from app.models.scan_flag import ScanFlag
 from app.models.support_ticket import SupportTicket
+from app.models.threat_intel import ThreatIntel
 from app.models.user import User
 
-__all__ = ["User", "Scan", "ScanFlag", "NewsCache", "SupportTicket"]
+__all__ = ["User", "Scan", "ScanFlag", "NewsCache", "SupportTicket", "ThreatIntel"]

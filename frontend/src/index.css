@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --scrollbar-w: 6px;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1e3a6e transparent;
+  }
+
+  *::-webkit-scrollbar { width: var(--scrollbar-w); height: var(--scrollbar-w); }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: #1e3a6e; border-radius: 99px; }
+
+  body {
+    @apply bg-navy-950 text-slate-100 font-sans;
+    font-feature-settings: 'ss01','ss02','cv01','cv02';
+  }
+
+  input, textarea, select {
+    @apply outline-none;
+  }
+
+  ::selection {
+    @apply bg-brand-600 text-white;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-navy-800/60 backdrop-blur-sm border border-white/[0.06] rounded-2xl;
+  }
+
+  .glass-card-light {
+    @apply bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-2xl;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+           text-slate-400 hover:text-white hover:bg-white/[0.06]
+           transition-all duration-150 cursor-pointer;
+  }
+
+  .nav-item.active {
+    @apply text-white bg-brand-600/20 border border-brand-500/30;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
+           bg-brand-600 hover:bg-brand-700 text-white
+           transition-all duration-150 active:scale-[.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
+           bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08]
+           text-slate-200 transition-all duration-150 active:scale-[.98];
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
+           bg-danger-600 hover:bg-danger-500/90 text-white
+           transition-all duration-150 active:scale-[.98];
+  }
+
+  .input-field {
+    @apply w-full bg-navy-900 border border-white/[0.10] rounded-xl px-4 py-3
+           text-slate-100 placeholder-slate-500 text-sm
+           focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20
+           transition-all duration-150;
+  }
+
+  .textarea-field {
+    @apply w-full bg-navy-900 border border-white/[0.10] rounded-xl px-4 py-3
+           text-slate-100 placeholder-slate-500 text-sm font-mono
+           focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20
+           transition-all duration-150 resize-none;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-slate-300 mb-1.5;
+  }
+
+  .badge-phishing {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-danger-600/20 text-danger-400 border border-danger-500/20;
+  }
+
+  .badge-legit {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-safe-500/20 text-safe-400 border border-safe-500/20;
+  }
+
+  .badge-suspicious {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold
+           bg-warn-500/20 text-warn-400 border border-warn-400/20;
+  }
+
+  .flag-red {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs
+           bg-danger-600/15 text-danger-400 border border-danger-500/20;
+  }
+
+  .flag-green {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs
+           bg-safe-500/15 text-safe-400 border border-safe-500/20;
+  }
+
+  .score-bar-track {
+    @apply h-1.5 rounded-full bg-white/[0.08] overflow-hidden;
+  }
+
+  .divider {
+    @apply border-t border-white/[0.06];
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-white tracking-tight;
+  }
+
+  .page-sub {
+    @apply text-sm text-slate-400 mt-0.5;
+  }
+
+  .section-title {
+    @apply text-base font-semibold text-slate-200 mb-1;
+  }
+
+  .table-th {
+    @apply px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider;
+  }
+
+  .table-td {
+    @apply px-4 py-3.5 text-sm text-slate-300;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-brand;
+  }
+  
+  .bg-mesh {
+    background-image: radial-gradient(at 40% 20%, rgba(59,130,246,.08) 0, transparent 50%),
+                      radial-gradient(at 80% 0%, rgba(124,58,237,.06) 0, transparent 50%);
+  }
+}

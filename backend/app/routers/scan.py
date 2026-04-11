@@ -31,7 +31,8 @@ from app.schemas.scan_schema import (
     ScanResult,
     URLScanRequest,
 )
-from app.services import ai_service, dns_service, email_service, ml_service
+from app.services import ai_service, dns_service, email_service, ml_service, intel_service
+from app.schemas.scan_schema import FlagItem
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -117,8 +118,33 @@ async def scan_url(
     """
     url = body.url
 
-    # ML inference
-    result = ml_service.predict_url(url)
+    # Check Live Threat Intelligence (Layer 1)
+    threat = await intel_service.lookup_threat(db, url)
+    
+    if threat:
+        # Global Threat Match found
+        # Map source to a nice display name
+        source_map = {"phishtank": "PhishTank", "phishstats": "PhishStats", "urlhaus": "URLHaus"}
+        source_name = source_map.get(threat.source, threat.source.capitalize())
+        
+        result = {
+            "label": "phishing",
+            "score": threat.confidence,
+            "score_pct": int(round(threat.confidence * 100)),
+            "red_flags": [
+                FlagItem(
+                    flag_type="red",
+                    flag_name="global_threat_match",
+                    description=f"This URL is currently active on the {source_name} live threat feed."
+                )
+            ],
+            "green_flags": [],
+            "feature_values": {"threat_source": threat.source, "confidence": threat.confidence},
+            "model_version": f"intel_feed_{threat.source}",
+        }
+    else:
+        # No known threat found, fall back to XGBoost ML (Layer 2)
+        result = ml_service.predict_url(url)
 
     # AI explanation (run concurrently with DB write)
     explanation, scan_id = await asyncio.gather(

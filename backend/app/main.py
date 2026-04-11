@@ -33,6 +33,9 @@ from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
 from app.routers import auth, history, news, scan, stats, support
 from app.services.email_service import load_email_model
 from app.services.ml_service import load_models
+from app.services import intel_service
+from app.database import AsyncSessionLocal
+import asyncio
 
 
 # ── Logging configuration ──────────────────────────────────────────────────────
@@ -96,6 +99,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     load_models()
     load_email_model()
     logger.info("ML models loaded.")
+
+    # ── Background Tasks ──────────────────────────────────────────────────────
+    async def threat_intel_task():
+        """
+        Periodically refreshes the global threat intelligence feeds.
+        Runs once on startup, then every hour.
+        """
+        # Wait a bit for the server to settle
+        await asyncio.sleep(5)
+        while True:
+            try:
+                async with AsyncSessionLocal() as db:
+                    logger.info("Background Task: Refreshing Threat Intelligence...")
+                    await intel_service.ingest_phishstats(db)
+                    await intel_service.ingest_phishtank(db)
+                    await intel_service.prune_old_threats(db, days=7)
+                    logger.info("Background Task: Threat Intel Refresh Complete.")
+            except Exception as e:
+                logger.error("Background Task: Threat Intel Refresh Failed: %s", e)
+            
+            # Sleep for 1 hour
+            await asyncio.sleep(3600)
+
+    # Fire and forget the background task
+    bg_task = asyncio.create_task(threat_intel_task())
 
     yield   # application is now running
 
