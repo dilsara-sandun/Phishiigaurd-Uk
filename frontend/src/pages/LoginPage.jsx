@@ -1,15 +1,19 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { Shield, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Shield, Mail, Lock, ArrowRight, Eye, EyeOff, Chrome, Facebook } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function LoginPage() {
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
   const [showPwd, setShowPwd]     = useState(false)
-  const { login }                 = useAuth()
+  const { login, forgotPassword } = useAuth()
   const navigate                  = useNavigate()
   const [loading, setLoading]     = useState(false)
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [sendingReset, setSendingReset] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -17,6 +21,14 @@ export default function LoginPage() {
     const success = await login(email, password)
     setLoading(false)
     if (success) navigate('/dashboard')
+  }
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault()
+    setSendingReset(true)
+    const success = await forgotPassword(forgotEmail)
+    setSendingReset(false)
+    if (success) setShowForgot(false)
   }
 
   return (
@@ -176,6 +188,15 @@ export default function LoginPage() {
                   {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <div style={{ textAlign: 'right', marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForgot(true)}
+                  style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             {/* Submit */}
@@ -191,7 +212,7 @@ export default function LoginPage() {
                 border: 'none', borderRadius: 10, color: '#fff',
                 fontSize: '0.95rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 24px rgba(79,70,229,0.4)',
-                transition: 'opacity 0.2s, transform 0.15s',
+                transition: 'all 0.15s',
               }}
               onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
@@ -202,6 +223,33 @@ export default function LoginPage() {
                 <><span>Access Dashboard</span><ArrowRight size={18} /></>
               )}
             </button>
+
+            {/* Social Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }}></div>
+              <span style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>or</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }}></div>
+            </div>
+
+            {/* Social Buttons */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => toast.error('Google login placeholder')}
+                style={socialButtonStyle}
+              >
+                <Chrome size={18} color="#fff" />
+                <span>Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.error('Facebook login placeholder')}
+                style={socialButtonStyle}
+              >
+                <Facebook size={18} color="#fff" />
+                <span>Facebook</span>
+              </button>
+            </div>
           </form>
 
           <p style={{ marginTop: '1.8rem', textAlign: 'center', fontSize: '0.87rem', color: '#475569' }}>
@@ -226,6 +274,85 @@ export default function LoginPage() {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── Forgot Password Modal ── */}
+      {showForgot && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(6,13,31,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '400px',
+            background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 20, padding: '2.5rem',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          }}>
+            <h3 style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.5rem' }}>Reset Password</h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Enter your email and we'll send you a link to reset your password.
+            </p>
+
+            <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569' }} />
+                <input
+                  type="email"
+                  required
+                  placeholder="analyst@bank.co.uk"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={sendingReset}
+                style={{
+                  width: '100%', padding: '0.85rem',
+                  background: sendingReset ? 'rgba(99,102,241,0.5)' : '#6366f1',
+                  border: 'none', borderRadius: 10, color: '#fff',
+                  fontSize: '0.95rem', fontWeight: 700, cursor: sendingReset ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {sendingReset ? 'Sending...' : 'Send Reset Link'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForgot(false)}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  color: '#475569', fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+const socialButtonStyle = {
+  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+  padding: '0.7rem 1rem',
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 10, color: '#94a3b8',
+  fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+  transition: 'all 0.15s',
+}
+
+const inputStyle = {
+  width: '100%', boxSizing: 'border-box',
+  padding: '0.75rem 1rem 0.75rem 2.6rem',
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10, color: '#e2e8f0',
+  fontSize: '0.92rem', outline: 'none',
+  transition: 'border-color 0.2s',
 }

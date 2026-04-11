@@ -30,7 +30,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
 from app.middleware.rate_limit import limiter, rate_limit_exceeded_handler
-from app.routers import auth, history, news, scan, stats, support
+from app.routers import auth, history, news, scan, stats, support, ai
 from app.services.email_service import load_email_model
 from app.services.ml_service import load_models
 from app.services import intel_service
@@ -186,6 +186,7 @@ def create_app() -> FastAPI:
     application.include_router(news.router, prefix=API_PREFIX)
     application.include_router(history.router, prefix=API_PREFIX)
     application.include_router(support.router, prefix=API_PREFIX)
+    application.include_router(ai.router, prefix=API_PREFIX)
 
     # ── Health check ──────────────────────────────────────────────────────────
     @application.get("/health", tags=["System"], include_in_schema=False)

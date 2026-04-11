@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react'
-import { login as apiLogin, register as apiRegister, getMe } from '../services/authService'
+import { login as apiLogin, register as apiRegister, getMe, verifyOtp as apiVerifyOtp, forgotPassword as apiForgotPassword, resetPassword as apiResetPassword } from '../services/authService'
 import toast from 'react-hot-toast'
 
 export const AuthContext = createContext(null)
@@ -51,6 +51,38 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const verifyOtp = async (email, otp) => {
+    try {
+      await apiVerifyOtp(email, otp)
+      return true
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'OTP verification failed')
+      return false
+    }
+  }
+
+  const forgotPassword = async (email) => {
+    try {
+      await apiForgotPassword(email)
+      toast.success('Reset link sent to your email')
+      return true
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to send reset link')
+      return false
+    }
+  }
+
+  const resetPassword = async (token, new_password) => {
+    try {
+      await apiResetPassword(token, new_password)
+      toast.success('Password reset successful')
+      return true
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Reset failed')
+      return false
+    }
+  }
+
   const logout = () => {
     localStorage.removeItem('token')
     setUser(null)
@@ -58,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, register, verifyOtp, forgotPassword, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   )

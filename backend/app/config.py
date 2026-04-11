@@ -90,11 +90,13 @@ class Settings(BaseSettings):
     GEO_IP_BASE: str = "http://ip-api.com/json"
 
     # ── Email settings (for verification emails) ──────────────────────────────
-    SMTP_HOST: str = "localhost"
+    SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
-    EMAILS_FROM: EmailStr = "noreply@phishguard.local"  # type: ignore[assignment]
+    EMAILS_FROM: EmailStr = "noreply@phishguard.uk"  # type: ignore[assignment]
+    OTP_LENGTH: int = 6
+    OTP_EXPIRE_MINUTES: int = 15
 
     # ── Validators ────────────────────────────────────────────────────────────
     @field_validator("SECRET_KEY")

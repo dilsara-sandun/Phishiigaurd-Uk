@@ -12,6 +12,7 @@ import OverviewDashboard from './pages/OverviewDashboard'
 import AnalysisCentre from './pages/AnalysisCentre'
 import HistoryPage from './pages/HistoryPage'
 import SupportPage from './pages/SupportPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           
           {/* Protected Routes */}
           <Route

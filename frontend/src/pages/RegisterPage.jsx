@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { Shield, Mail, Lock, Building, ArrowRight, Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { Shield, Mail, Lock, Building, ArrowRight, Eye, EyeOff, CheckCircle, Facebook, Chrome } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function RegisterPage() {
@@ -9,21 +9,35 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [org, setOrg]           = useState('')
   const [showPwd, setShowPwd]   = useState(false)
-  const { register }            = useAuth()
+  const { register, verifyOtp } = useAuth()
   const navigate                = useNavigate()
   const [loading, setLoading]   = useState(false)
+  const [showOtp, setShowOtp]   = useState(false)
+  const [otp, setOtp]           = useState('')
+  const [verifying, setVerifying] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!email.endsWith('.uk') && !email.endsWith('.com')) {
-      toast.error('Must use a valid corporate email address')
-      return
-    }
     setLoading(true)
     const success = await register(email, password)
     setLoading(false)
     if (success) {
-      toast.success('Registration successful. You can now login.')
+      toast.success('Registration successful! Please enter the OTP sent to your email.')
+      setShowOtp(true)
+    }
+  }
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault()
+    if (otp.length !== 6) {
+      toast.error('Please enter a 6-digit OTP')
+      return
+    }
+    setVerifying(true)
+    const success = await verifyOtp(email, otp)
+    setVerifying(false)
+    if (success) {
+      toast.success('Email verified successfully! You can now log in.')
       navigate('/login')
     }
   }
@@ -164,7 +178,7 @@ export default function RegisterPage() {
                 border: 'none', borderRadius: 10, color: '#fff',
                 fontSize: '0.92rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 24px rgba(79,70,229,0.4)',
-                transition: 'transform 0.15s',
+                transition: 'all 0.15s',
               }}
               onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
@@ -172,9 +186,36 @@ export default function RegisterPage() {
               {loading ? (
                 <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
               ) : (
-                <><span>Submit Registration</span><ArrowRight size={17} /></>
+                <><span>Create Account</span><ArrowRight size={17} /></>
               )}
             </button>
+
+            {/* Social Divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }}></div>
+              <span style={{ color: '#475569', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>or continue with</span>
+              <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.07)' }}></div>
+            </div>
+
+            {/* Social Buttons */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => toast.error('Google login placeholder')}
+                style={socialButtonStyle}
+              >
+                <Chrome size={18} color="#fff" />
+                <span>Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.error('Facebook login placeholder')}
+                style={socialButtonStyle}
+              >
+                <Facebook size={18} color="#fff" />
+                <span>Facebook</span>
+              </button>
+            </div>
           </form>
 
           <p style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: '#475569' }}>
@@ -255,8 +296,90 @@ export default function RegisterPage() {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+      {/* ── OTP Verification Modal ── */}
+      {showOtp && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(6,13,31,0.85)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '400px',
+            background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 20, padding: '2.5rem',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', background: 'rgba(99,102,241,0.1)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem',
+              }}>
+                <Shield size={28} color="#6366f1" />
+              </div>
+              <h3 style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 700, marginBottom: '0.5rem' }}>Verify your email</h3>
+              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                We've sent a 6-digit OTP code to <strong style={{ color: '#fff' }}>{email}</strong>
+              </p>
+            </div>
+
+            <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+              <div>
+                <input
+                  type="text"
+                  maxLength={6}
+                  required
+                  placeholder="0 0 0 0 0 0"
+                  value={otp}
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
+                  style={{
+                    width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                    color: '#fff', fontSize: '1.5rem', textAlign: 'center', fontWeight: 800,
+                    letterSpacing: '0.5em', outline: 'none',
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={verifying}
+                style={{
+                  width: '100%', padding: '0.85rem',
+                  background: verifying ? 'rgba(99,102,241,0.5)' : '#6366f1',
+                  border: 'none', borderRadius: 10, color: '#fff',
+                  fontSize: '0.95rem', fontWeight: 700, cursor: verifying ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {verifying ? 'Verifying...' : 'Verify OTP'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowOtp(false)}
+                style={{
+                  width: '100%', background: 'none', border: 'none',
+                  color: '#475569', fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                Cancel and back to form
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+const socialButtonStyle = {
+  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem',
+  padding: '0.7rem 1rem',
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 10, color: '#94a3b8',
+  fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer',
+  transition: 'all 0.15s',
 }
 
 const inputStyle = {

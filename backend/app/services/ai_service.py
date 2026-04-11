@@ -1,46 +1,35 @@
 """
 services/ai_service.py
 ──────────────────────
-Generates plain-English explanations for scan results using either:
-  1. Google Gemini API  (gemini-1.5-flash, free tier — preferred when key is set)
-  2. Local Ollama       (Mistral 7B — zero cost fallback)
-
-The LLM is NEVER used for detection; it only explains the output of the ML
-model in user-friendly language.  A tightly constrained system prompt keeps
-responses focused and prevents hallucination.
+Generates plain-English explanations for scan results and handles general
+chatbot conversations using either:
+  1. Google Gemini API  (gemini-1.5-flash)
+  2. Local Ollama       (Mistral 7B)
 """
 
-import json
 import logging
 from typing import Any
-
 import httpx
-
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# ── System prompt ──────────────────────────────────────────────────────────────
-# This prompt is immutable and injected into every LLM call.
-_SYSTEM_PROMPT = """
-You are a cybersecurity assistant for PhishGuard UK, a phishing detection tool
-used by UK bank staff and customers.  Your ONLY job is to explain, in plain
-English, why a URL, email, or domain was flagged by the machine-learning model.
+# ── System Prompts ─────────────────────────────────────────────────────────────
 
-Rules you must ALWAYS follow:
-1. Keep your explanation to 2-4 sentences.  Do not use bullet points.
-2. Reference the specific red flags provided to you (e.g. brand mismatch,
-   suspicious TLD, high entropy) — do not invent new reasons.
-3. End with exactly ONE actionable recommendation from the list below:
-   - "Do not click this link. Report it to report@phishing.gov.uk and contact
-     your bank directly using the number on the back of your card."
-   - "Exercise caution. Verify this URL with your bank before proceeding."
-   - "This URL appears legitimate based on the features provided."
-4. NEVER ask users for passwords, PINs, account numbers, or any credentials.
-5. NEVER make absolute guarantees. Use language like "appears", "suggests",
-   "indicates", "our model rates this as".
-6. If the label is 'legitimate', reassure the user briefly and explain the
-   positive indicators.
+_EXPLAIN_SYSTEM_PROMPT = """
+You are a cybersecurity assistant for PhishGuard UK. Your ONLY job is to explain, in plain
+English, why a URL, email, or domain was flagged by the machine-learning model.
+Rules: 2-4 sentences, no bullet points, reference provided flags, end with 1 actionable recommendation.
+""".strip()
+
+_CHAT_SYSTEM_PROMPT = """
+You are PhishGuard AI, a friendly and professional cybersecurity assistant for PhishGuard UK.
+Your personality is a mix of a highly knowledgeable Cyber Security Expert and a helpful General Assistant.
+
+- If the user asks about security, phishing, or protection, provide expert advice based on UK NCSC guidelines.
+- If the user asks general questions, be helpful and polite while maintaining a professional security-conscious tone.
+- Keep responses concise and avoid jargon where possible.
+- If the user asks for personal help with a scam, prioritize safety and suggest reporting to Action Fraud.
 """.strip()
 
 
@@ -76,23 +65,22 @@ def _build_prompt(
 
 # ── Gemini API call ────────────────────────────────────────────────────────────
 
-async def _call_gemini(prompt: str) -> str:
+async def _call_gemini(prompt: str, system_prompt: str | None = None) -> str:
     """
-    Call Google Gemini API (gemini-1.5-flash).
-    Returns the text response or raises an exception.
+    Call Google Gemini API.
     """
     import google.generativeai as genai  # imported lazily
 
     genai.configure(api_key=settings.GEMINI_API_KEY)
     model = genai.GenerativeModel(
         model_name=settings.GEMINI_MODEL,
-        system_instruction=_SYSTEM_PROMPT,
+        system_instruction=system_prompt if system_prompt else _EXPLAIN_SYSTEM_PROMPT,
     )
     response = model.generate_content(
         prompt,
         generation_config=genai.types.GenerationConfig(
-            temperature=0.2,
-            max_output_tokens=256,
+            temperature=0.3,
+            max_output_tokens=512,
         ),
     )
     return response.text.strip()
@@ -100,18 +88,18 @@ async def _call_gemini(prompt: str) -> str:
 
 # ── Ollama API call ────────────────────────────────────────────────────────────
 
-async def _call_ollama(prompt: str) -> str:
+async def _call_ollama(prompt: str, system_prompt: str | None = None) -> str:
     """
-    Call a locally running Ollama instance (e.g. Mistral 7B).
-    Returns the generated text or raises an exception.
+    Call a locally running Ollama instance.
     """
+    sys = system_prompt if system_prompt else _EXPLAIN_SYSTEM_PROMPT
     payload = {
         "model": settings.OLLAMA_MODEL,
-        "prompt": f"{_SYSTEM_PROMPT}\n\nUser: {prompt}\n\nAssistant:",
+        "prompt": f"{sys}\n\nUser: {prompt}\n\nAssistant:",
         "stream": False,
         "options": {
-            "temperature": 0.2,
-            "num_predict": 256,
+            "temperature": 0.4,
+            "num_predict": 512,
         },
     }
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -132,10 +120,7 @@ def _template_explanation(
     score_pct: int,
     red_flags: list[dict],
 ) -> str:
-    """
-    Static template used when both Gemini and Ollama are unavailable.
-    Ensures users always receive some explanation.
-    """
+    """Static template fallback."""
     if label == "phishing":
         flag_str = ", ".join(f.get("flag_name", "").replace("_", " ") for f in red_flags[:3])
         return (
@@ -144,19 +129,13 @@ def _template_explanation(
             f"Do not click this link. Report it to report@phishing.gov.uk and contact "
             f"your bank directly using the number on the back of your card."
         )
-    if label == "suspicious":
-        return (
-            f"This URL shows some suspicious characteristics (score {score_pct}%) but could not "
-            f"be definitively classified. Exercise caution and verify this URL with your bank "
-            f"before proceeding."
-        )
     return (
         f"This URL appears legitimate (phishing probability {score_pct}%). "
         f"Our model found no significant phishing indicators."
     )
 
 
-# ── Public entry point ────────────────────────────────────────────────────────
+# ── Public entry points ──────────────────────────────────────────────────────
 
 async def generate_explanation(
     input_value: str,
@@ -166,29 +145,33 @@ async def generate_explanation(
     green_flags: list[dict],
     feature_values: dict[str, Any] | None = None,
 ) -> str:
-    """
-    Generate a plain-English explanation for a scan result.
-
-    Tries Gemini first, then Ollama, then falls back to a static template.
-    Never raises an exception — always returns a string.
-    """
+    """Generate a plain-English explanation for a scan result."""
     prompt = _build_prompt(input_value, label, score_pct, red_flags, green_flags, feature_values)
-
-    # 1. Try Gemini
+    
     if settings.GEMINI_API_KEY:
         try:
-            return await _call_gemini(prompt)
+            return await _call_gemini(prompt, system_prompt=_EXPLAIN_SYSTEM_PROMPT)
         except Exception as exc:
-            logger.warning("Gemini call failed, falling back to Ollama: %s", exc)
+            logger.warning("Gemini call failed: %s", exc)
 
-    # 2. Try Ollama
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            health = await client.get(f"{settings.OLLAMA_BASE_URL}/api/tags")
-        if health.status_code == 200:
-            return await _call_ollama(prompt)
+        return await _call_ollama(prompt, system_prompt=_EXPLAIN_SYSTEM_PROMPT)
     except Exception as exc:
-        logger.warning("Ollama not available (%s), using template explanation.", exc)
+        logger.warning("Ollama not available: %s", exc)
 
-    # 3. Static template fallback
     return _template_explanation(input_value, label, score_pct, red_flags)
+
+
+async def generate_chat_response(message: str) -> str:
+    """Generate a general chat response for the dashboard chatbot."""
+    if settings.GEMINI_API_KEY:
+        try:
+            return await _call_gemini(message, system_prompt=_CHAT_SYSTEM_PROMPT)
+        except Exception as exc:
+            logger.warning("Gemini chat failed: %s", exc)
+
+    try:
+        return await _call_ollama(message, system_prompt=_CHAT_SYSTEM_PROMPT)
+    except Exception as exc:
+        logger.warning("Ollama chat not available: %s", exc)
+        return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later."

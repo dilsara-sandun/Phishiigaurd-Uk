@@ -21,23 +21,32 @@ from app.middleware.auth_middleware import get_current_user
 from app.middleware.rate_limit import limiter
 from app.models.user import User
 from app.schemas.auth_schema import (
+    ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     RefreshRequest,
     RegisterRequest,
     RegisterResponse,
+    ResetPasswordRequest,
     TokenResponse,
     UserProfile,
+    VerifyOTPRequest,
 )
 from app.services.auth_service import (
     authenticate_user,
     create_access_token,
+    create_password_reset_token,
     create_refresh_token,
     decode_token,
     get_user_by_id,
     refresh_access_token,
     register_user,
-    verify_email_token,
+    reset_password_with_token,
+    verify_otp,
+)
+from app.services.notification_service import (
+    send_otp_email,
+    send_password_reset_email,
 )
 from app.config import settings
 import uuid
@@ -98,25 +107,20 @@ async def register(
     try:
         user = await register_user(db, body.email, body.password)
         logger.info("New user registered: %s (id=%s)", user.email, user.id)
+        
+        # Send OTP by email
+        await send_otp_email(user.email, user.verify_token)
+        
     except ValueError as exc:
         # Prevent Account Enumeration: Log the conflict internally but return standard success.
         logger.warning("Registration blocked (Account Enumeration Mitigation): %s", str(exc))
         return RegisterResponse(
-            message="Registration successful. Please check your email to verify your account.",
-            user_id="pending-verification-state",  # Obfuscated
+            message="Registration successful. Please check your email for the OTP code.",
+            user_id="pending-verification-state",
         )
 
-    # In a full deployment, send user.verify_token by email here.
-    # For the prototype, we log it so developers can verify manually.
-    logger.debug(
-        "Email verification token for %s: %s (expires %s)",
-        user.email,
-        user.verify_token,
-        user.verify_token_expires,
-    )
-
     return RegisterResponse(
-        message="Registration successful. Please check your email to verify your account.",
+        message="Registration successful. Please check your email for the OTP code.",
         user_id=user.id,
     )
 
@@ -230,29 +234,70 @@ async def logout(response: Response) -> MessageResponse:
     return MessageResponse(message="Logged out successfully.")
 
 
-# ── GET /auth/verify-email ────────────────────────────────────────────────────
+# ── POST /auth/verify-otp ─────────────────────────────────────────────────────
 
-@router.get(
-    "/verify-email",
+@router.post(
+    "/verify-otp",
     response_model=MessageResponse,
-    summary="Verify email address using a one-time token",
+    summary="Verify email address using a numeric OTP code",
 )
-async def verify_email(
-    token: str = Query(..., description="One-time verification token from the email link"),
+async def verify_otp_endpoint(
+    body: VerifyOTPRequest,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """
-    Mark the user's email as verified.
-    The token is consumed on first use.
-    Returns HTTP 400 if the token is invalid or expired.
+    Mark the user's email as verified using the 6-digit OTP.
     """
     try:
-        user = await verify_email_token(db, token)
+        await verify_otp(db, body.email, body.otp)
+        await db.commit()
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    logger.info("Email verified for user: %s", user.email)
+    logger.info("OTP verified for user: %s", body.email)
     return MessageResponse(message="Email verified successfully. You can now log in.")
+
+
+# ── POST /auth/forgot-password ───────────────────────────────────────────────
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+    summary="Request a password reset token",
+)
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    try:
+        token = await create_password_reset_token(db, body.email)
+        await send_password_reset_email(body.email, token)
+        await db.commit()
+    except ValueError:
+        # Standard security practice: don't reveal if account exists
+        pass
+    
+    return MessageResponse(message="If an account exists with that email, a reset link has been sent.")
+
+
+# ── POST /auth/reset-password ────────────────────────────────────────────────
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+    summary="Reset password using a token",
+)
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    try:
+        await reset_password_with_token(db, body.token, body.new_password)
+        await db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    
+    return MessageResponse(message="Password has been reset successfully.")
 
 
 # ── GET /auth/me ──────────────────────────────────────────────────────────────

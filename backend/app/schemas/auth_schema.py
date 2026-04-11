@@ -65,8 +65,20 @@ class RefreshRequest(BaseModel):
 
 # ── Email verification ────────────────────────────────────────────────────────
 
-class VerifyEmailRequest(BaseModel):
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=6, max_length=6)
+
+
+# ── Password reset ────────────────────────────────────────────────────────────
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
     token: str
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 # ── Current user (returned by /auth/me) ──────────────────────────────────────
