@@ -1,5 +1,6 @@
 import React from 'react'
 import { Sparkles, Bot, AlertCircle } from 'lucide-react'
+import DOMPurify from 'dompurify'
 
 export default function AIExplanation({ explanation, loading }) {
   if (loading) {
@@ -57,12 +58,12 @@ export default function AIExplanation({ explanation, loading }) {
              return (
                <div key={idx} className="bg-safe-500/10 border border-safe-500/20 rounded-lg p-3 flex gap-3 mt-4">
                  <AlertCircle size={16} className="text-safe-400 flex-shrink-0 mt-0.5" />
-                 <p dangerouslySetInnerHTML={{ __html: parsedText }} />
+                 <p dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(parsedText) }} />
                </div>
              )
           }
 
-          return <p key={idx} dangerouslySetInnerHTML={{ __html: parsedText }} />
+          return <p key={idx} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(parsedText) }} />
         })}
       </div>
     </div>
