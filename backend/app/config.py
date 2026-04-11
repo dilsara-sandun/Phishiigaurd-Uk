@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # ── ML model paths ────────────────────────────────────────────────────────
     MODEL_DIR: str = "../ml/models"
-    XGB_MODEL_PATH: str = "../ml/models/xgb_phish_v1.pkl"
+    XGB_MODEL_PATH: str = "../ml/models/xgb_model.pkl"
     EMAIL_MODEL_PATH: str = "../ml/models/email_model.pkl"
     TFIDF_VECTORIZER_PATH: str = "../ml/models/tfidf_vectorizer.pkl"
     SHAP_EXPLAINER_PATH: str = "../ml/models/shap_explainer.pkl"
