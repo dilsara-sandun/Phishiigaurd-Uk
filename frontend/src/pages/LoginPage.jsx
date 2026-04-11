@@ -1,14 +1,15 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { Shield, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Shield, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const { login }               = useAuth()
-  const navigate                = useNavigate()
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]         = useState('')
+  const [password, setPassword]   = useState('')
+  const [showPwd, setShowPwd]     = useState(false)
+  const { login }                 = useAuth()
+  const navigate                  = useNavigate()
+  const [loading, setLoading]     = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -19,70 +20,212 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-navy-950 bg-mesh items-center justify-center p-6">
-      
-      <div className="w-full max-w-md glass-card p-8 animate-fade-in relative overflow-hidden">
-        {/* Decorative blur */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-500/20 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex justify-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-brand flex items-center justify-center shadow-glow">
-            <Shield size={28} className="text-white" />
-          </div>
-        </div>
-        
-        <h2 className="text-2xl font-bold text-center text-white mb-2 tracking-tight">PhishGuard UK</h2>
-        <p className="text-center text-slate-400 text-sm mb-8">Sign in to your analyst dashboard</p>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#060d1f' }}>
 
-        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
-          <div>
-            <label className="label">Work Email</label>
-            <div className="relative">
-              <Mail size={18} className="absolute left-4 top-3.5 text-slate-500 pointer-events-none" />
-              <input
-                type="email"
-                required
-                className="input-field pl-11"
-                placeholder="analyst@bank.co.uk"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </div>
-          </div>
+      {/* ── Left Panel – Hero Image ── */}
+      <div style={{
+        flex: 1,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        minHeight: '100vh',
+      }}>
+        {/* Background image */}
+        <img
+          src="/login-hero.jpg"
+          alt="Phishing threat illustration"
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
+        />
+        {/* Dark gradient overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(135deg, rgba(6,13,31,0.78) 0%, rgba(6,13,31,0.45) 60%, rgba(6,13,31,0.82) 100%)',
+        }} />
 
-          <div>
-            <label className="label">Password</label>
-            <div className="relative">
-              <Lock size={18} className="absolute left-4 top-3.5 text-slate-500 pointer-events-none" />
-              <input
-                type="password"
-                required
-                className="input-field pl-11 font-mono tracking-wider"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-            </div>
+        {/* Branding text on top of image */}
+        <div style={{
+          position: 'relative', zIndex: 10,
+          textAlign: 'center', padding: '2rem',
+          maxWidth: '480px',
+        }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 64, height: 64, borderRadius: 18,
+            background: 'linear-gradient(135deg,#3b82f6,#6366f1)',
+            boxShadow: '0 0 32px rgba(99,102,241,0.5)',
+            marginBottom: '1.5rem',
+          }}>
+            <Shield size={32} color="#fff" />
           </div>
+          <h1 style={{
+            fontSize: '2.2rem', fontWeight: 800, color: '#fff',
+            letterSpacing: '-0.5px', marginBottom: '0.75rem', lineHeight: 1.2,
+          }}>
+            PhishGuard <span style={{ color: '#60a5fa' }}>UK</span>
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '1rem', lineHeight: 1.6 }}>
+            Advanced phishing threat intelligence for<br />UK financial institutions &amp; enterprises.
+          </p>
 
-          <div className="pt-2">
-            <button type="submit" disabled={loading} className="btn-primary w-full justify-center">
-              {loading ? (
-                <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-              ) : (
-                <>Access Dashboard <ArrowRight size={18} /></>
-              )}
-            </button>
+          {/* Feature chips */}
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '2rem' }}>
+            {['Real-time Detection', 'AI-Powered', 'UK Threat Intel'].map(chip => (
+              <span key={chip} style={{
+                padding: '0.3rem 0.85rem', borderRadius: 999,
+                background: 'rgba(99,102,241,0.18)',
+                border: '1px solid rgba(99,102,241,0.35)',
+                color: '#a5b4fc', fontSize: '0.8rem', fontWeight: 600,
+              }}>{chip}</span>
+            ))}
           </div>
-        </form>
-
-        <div className="mt-6 text-center text-sm">
-          <span className="text-slate-500">Don't have an account? </span>
-          <Link to="/register" className="text-brand-400 font-medium hover:text-brand-300 transition-colors">
-            Request access
-          </Link>
         </div>
       </div>
+
+      {/* ── Right Panel – Login Form ── */}
+      <div style={{
+        width: '480px', flexShrink: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '3rem 2.5rem',
+        background: 'rgba(255,255,255,0.03)',
+        borderLeft: '1px solid rgba(255,255,255,0.07)',
+        backdropFilter: 'blur(24px)',
+      }}>
+        <div style={{ width: '100%', maxWidth: '360px' }}>
+
+          {/* Form header */}
+          <h2 style={{
+            fontSize: '1.7rem', fontWeight: 800, color: '#fff',
+            letterSpacing: '-0.3px', marginBottom: '0.4rem',
+          }}>Welcome back</h2>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '2rem' }}>
+            Sign in to your analyst account
+          </p>
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+
+            {/* Email */}
+            <div>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.45rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Work Email
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  placeholder="analyst@bank.co.uk"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '0.75rem 1rem 0.75rem 2.6rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10, color: '#e2e8f0',
+                    fontSize: '0.92rem', outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#6366f1'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.45rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#475569', pointerEvents: 'none' }} />
+                <input
+                  id="login-password"
+                  type={showPwd ? 'text' : 'password'}
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    padding: '0.75rem 2.8rem 0.75rem 2.6rem',
+                    fontFamily: 'monospace', letterSpacing: '0.1em',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10, color: '#e2e8f0',
+                    fontSize: '0.92rem', outline: 'none',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onFocus={e => e.target.style.borderColor = '#6366f1'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#475569' }}
+                >
+                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              id="login-submit"
+              type="submit"
+              disabled={loading}
+              style={{
+                marginTop: '0.5rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                padding: '0.85rem 1.5rem',
+                background: loading ? 'rgba(99,102,241,0.5)' : 'linear-gradient(135deg,#4f46e5,#3b82f6)',
+                border: 'none', borderRadius: 10, color: '#fff',
+                fontSize: '0.95rem', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 24px rgba(79,70,229,0.4)',
+                transition: 'opacity 0.2s, transform 0.15s',
+              }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)' }}
+            >
+              {loading ? (
+                <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+              ) : (
+                <><span>Access Dashboard</span><ArrowRight size={18} /></>
+              )}
+            </button>
+          </form>
+
+          <p style={{ marginTop: '1.8rem', textAlign: 'center', fontSize: '0.87rem', color: '#475569' }}>
+            Don&apos;t have an account?{' '}
+            <Link to="/register" style={{ color: '#818cf8', fontWeight: 600, textDecoration: 'none' }}>
+              Request access
+            </Link>
+          </p>
+
+          {/* Security note */}
+          <div style={{
+            marginTop: '2.5rem', padding: '0.8rem 1rem',
+            background: 'rgba(99,102,241,0.08)',
+            border: '1px solid rgba(99,102,241,0.2)',
+            borderRadius: 10, textAlign: 'center',
+          }}>
+            <p style={{ color: '#6366f1', fontSize: '0.78rem', fontWeight: 600, margin: 0 }}>
+              🔒 &nbsp;Secured with multi-layer encryption &amp; MFA
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
