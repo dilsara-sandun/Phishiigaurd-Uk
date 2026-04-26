@@ -72,7 +72,7 @@ async def ingest_phishtank(db: AsyncSession):
                 if values:
                     # Bulk upsert using Postgres specific syntax
                     stmt = insert(ThreatIntel).values(values)
-                    stmt = stmt.on_conflict_do_nothing(index_elements=["url"])
+                    stmt = stmt.on_conflict_do_nothing()
                     await db.execute(stmt)
                     await db.commit() 
                     total_added += len(values)
@@ -116,7 +116,7 @@ async def ingest_phishstats(db: AsyncSession):
                     source="phishstats",
                     target_brand="Generic",
                     confidence=score
-                ).on_conflict_do_nothing(index_elements=["url"])
+                ).on_conflict_do_nothing()
                 
                 await db.execute(stmt)
                 count += 1
