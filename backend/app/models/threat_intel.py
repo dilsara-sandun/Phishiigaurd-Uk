@@ -9,7 +9,7 @@ Provides a fast, indexed lookup for the scanner.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, String, func
+from sqlalchemy import DateTime, Float, Index, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,7 +24,8 @@ class ThreatIntel(Base):
     )
     
     # The malicious URL
-    url: Mapped[str] = mapped_column(String(2048), nullable=False, unique=True)
+    # NOTE: Uniqueness enforced via MD5 hash index in DB, not BTree on raw TEXT
+    url: Mapped[str] = mapped_column(Text, nullable=False)
     
     # Source provider e.g. 'phishtank', 'phishstats'
     source: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -43,9 +44,10 @@ class ThreatIntel(Base):
         index=True
     )
 
-    # Index for fast URL lookups
+    # URL lookups use a DB-level MD5 unique index (created via SQL migration)
+    # This avoids PostgreSQL's BTree 2704-byte index limit for TEXT columns
     __table_args__ = (
-        Index("ix_threat_intel_url_hash", url),
+        Index("ix_threat_intel_url_hash", func.md5(url)),
     )
 
     def __repr__(self) -> str:

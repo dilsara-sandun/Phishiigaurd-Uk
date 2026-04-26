@@ -61,6 +61,16 @@ def load_email_model() -> None:
         )
         _estate.loaded = False
         return
+
+    # Check if files are empty (0 bytes) to avoid EOFError
+    if model_path.stat().st_size == 0 or vec_path.stat().st_size == 0:
+        logger.warning(
+            "Email model files are empty (0 bytes). "
+            "Please train the email model using the provided notebooks. "
+            "Falling back to heuristics."
+        )
+        _estate.loaded = False
+        return
     try:
         _estate.model = joblib.load(model_path)
         _estate.vectorizer = joblib.load(vec_path)

@@ -163,7 +163,7 @@ async def verify_otp(db: AsyncSession, email: str, otp: str) -> User:
     return user
 
 
-async def create_reset_password_token(db: AsyncSession, email: str) -> str:
+async def create_password_reset_token(db: AsyncSession, email: str) -> str:
     """Generate and store a password reset token for a user."""
     user = await get_user_by_email(db, email)
     if user is None:

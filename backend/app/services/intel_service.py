@@ -6,6 +6,7 @@ Handles ingestion of live phishing URLs from external feeds.
 - PhishStats: Real-time public API.
 """
 
+import json
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -20,7 +21,10 @@ from app.services.ml_service import UK_BANK_BRANDS
 
 logger = logging.getLogger(__name__)
 
-PHISHTANK_URL = "http://data.phishtank.com/data/online-valid.json"
+import gzip
+import io
+
+PHISHTANK_URL = "http://data.phishtank.com/data/online-valid.json.gz"
 PHISHSTATS_API = "https://phishstats.info:20453/api/v1/"
 
 # Standard User-Agent as required by PhishTank guidelines
@@ -31,23 +35,31 @@ HEADERS = {
 
 async def ingest_phishtank(db: AsyncSession):
     """
-    Download and process PhishTank's online-valid dataset.
+    Download and process PhishTank's online-valid dataset (.gz version).
     """
     logger.info("Starting PhishTank ingest...")
     try:
         async with httpx.AsyncClient(headers=HEADERS, timeout=120.0, follow_redirects=True) as client:
             response = await client.get(PHISHTANK_URL)
             response.raise_for_status()
-            data = response.json()
+            
+            # Decompress GZIP content
+            with gzip.GzipFile(fileobj=io.BytesIO(response.content)) as f:
+                data = json.load(f)
             
             # Process in batches of 1000 for efficiency
             batch_size = 1000
+            total_added = 0
             for i in range(0, len(data), batch_size):
                 batch = data[i : i + batch_size]
                 values = []
                 for entry in batch:
                     url = entry.get("url")
                     if not url: continue
+                    # Truncate extremely long URLs — PostgreSQL BTree index limit is ~2704 bytes
+                    if len(url) > 2000:
+                        url = url[:2000]
+                    
                     target = entry.get("target", "Generic")
                     values.append({
                         "id": uuid.uuid4(),
@@ -62,12 +74,14 @@ async def ingest_phishtank(db: AsyncSession):
                     stmt = insert(ThreatIntel).values(values)
                     stmt = stmt.on_conflict_do_nothing(index_elements=["url"])
                     await db.execute(stmt)
-                    await db.commit() # Commit each batch to avoid massive transaction locks
+                    await db.commit() 
+                    total_added += len(values)
                 
-            logger.info("PhishTank ingest complete.")
-            return len(data)
+            logger.info("PhishTank ingest complete. Processed %d entries.", total_added)
+            return total_added
             
     except Exception as exc:
+        await db.rollback()
         logger.error("PhishTank ingest failed: %s", exc)
         return 0
 
@@ -90,6 +104,10 @@ async def ingest_phishstats(db: AsyncSession):
                 url = entry.get("url")
                 if not url: continue
                 
+                # Truncate extremely long URLs — PostgreSQL BTree index limit is ~2704 bytes
+                if len(url) > 2000:
+                    url = url[:2000]
+
                 # PhishStats provides a 'score' (0-10)
                 score = float(entry.get("score", 10)) / 10.0
                 
@@ -108,6 +126,7 @@ async def ingest_phishstats(db: AsyncSession):
             return count
             
     except Exception as exc:
+        await db.rollback()
         logger.error("PhishStats ingest failed: %s", exc)
         return 0
 
