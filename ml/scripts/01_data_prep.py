@@ -44,7 +44,9 @@ def prep_dataset():
         # For PhiUSIIL: Let's assume 1=phishing for simplicity, we will correct if needed.
         if 'URL' in df_lg.columns and 'ClassLabel' in df_lg.columns:
             df_lg = df_lg[['URL', 'ClassLabel']].rename(columns={'URL': 'url', 'ClassLabel': 'label'})
-            
+            # url_features_extracted1 (LegitPhish): ClassLabel=1 means phishing, 0 means legitimate.
+            # Normalize to ensure consistency: 1 = phishing, 0 = legitimate.
+            df_lg['label'] = df_lg['label'].apply(lambda x: 1 if int(x) == 1 else 0)
     df_combined = pd.concat([df_ph, df_lg], ignore_index=True)
     if df_combined.empty:
         print("Error: No data found. Ensure raw_phiusiil.csv exists.")

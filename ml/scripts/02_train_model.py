@@ -60,13 +60,14 @@ def train_and_eval():
         max_depth=6,
         learning_rate=0.1,
         random_state=42,
-        eval_metric='logloss'
+        eval_metric='logloss',
+        early_stopping_rounds=10,   # XGBoost 2.x: must be set in constructor
     )
-    # Early stopping using validation set
+    # Fit with eval set for early stopping
     clf.fit(
         X_train_res, y_train_res,
         eval_set=[(X_val, y_val)],
-        verbose=10
+        verbose=10,
     )
 
     print("\n5. Saving Model...")
