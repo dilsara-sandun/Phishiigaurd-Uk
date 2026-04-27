@@ -11,6 +11,7 @@ Three email templates:
 
 import logging
 import smtplib
+import asyncio
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -135,9 +136,11 @@ async def _send(to_email: str, subject: str, html: str, plain: str) -> bool:
             server.starttls()
             server.ehlo()
 
-        server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
+        # Run blocking SMTP operations in a thread pool
+        await asyncio.to_thread(server.login, settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+        await asyncio.to_thread(server.send_message, msg)
+        await asyncio.to_thread(server.quit)
+        
         logger.info("Email sent → %s | Subject: %s", to_email, subject)
         return True
     except Exception as exc:

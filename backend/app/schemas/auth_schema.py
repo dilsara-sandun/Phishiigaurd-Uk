@@ -7,9 +7,9 @@ FastAPI uses these for request body validation and OpenAPI doc generation.
 
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 
 # ── Registration ───────────────────────────────────────────────────────────────
@@ -19,27 +19,12 @@ class RegisterRequest(BaseModel):
     Registration request.
     Accepts any valid email address — corporate, personal (Gmail/Outlook),
     university, or banking domain.
-    confirm_password is optional; when omitted it defaults to the value of
-    password so single-field frontend forms still pass validation.
+    confirm_password is optional; when omitted it is treated as equal to
+    password so single-field frontend forms pass validation without errors.
     """
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-    confirm_password: str | None = Field(default=None, min_length=8, max_length=128)
-
-    @field_validator("confirm_password", mode="before")
-    @classmethod
-    def default_confirm_password(cls, v, info):
-        """If confirm_password is not provided, treat it as equal to password."""
-        if v is None:
-            return info.data.get("password")
-        return v
-
-    @field_validator("confirm_password")
-    @classmethod
-    def passwords_must_match(cls, v: str, info) -> str:
-        if info.data.get("password") and v != info.data["password"]:
-            raise ValueError("Passwords do not match")
-        return v
+    confirm_password: Optional[str] = Field(default=None, max_length=128)
 
     @field_validator("password")
     @classmethod
@@ -48,7 +33,22 @@ class RegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one uppercase letter")
         if not any(c.isdigit() for c in v):
             raise ValueError("Password must contain at least one digit")
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
         return v
+
+    @model_validator(mode="after")
+    def passwords_must_match(self) -> "RegisterRequest":
+        """
+        If confirm_password was provided, verify it matches password.
+        If omitted (None), silently default it — single-field forms are allowed.
+        """
+        if self.confirm_password is None:
+            # Frontend did not send confirm_password — treat as matching
+            self.confirm_password = self.password
+        elif self.confirm_password != self.password:
+            raise ValueError("Passwords do not match")
+        return self
 
 
 class RegisterResponse(BaseModel):

@@ -46,20 +46,20 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-[0_0_20px_rgba(6,182,212,0.4)] mb-6">
             <Shield size={28} className="text-white" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">Access Platform</h1>
-          <p className="text-slate-400 text-lg">Enter your node credentials to continue to PhishGuard UK.</p>
+          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">Sign In</h1>
+          <p className="text-slate-400 text-lg">Enter your credentials to access PhishGuard UK.</p>
         </div>
 
         <div className="bg-midnight-900/80 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Institutional Email</label>
+              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="email"
                   required
-                  placeholder="analyst@bank.co.uk"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white text-base focus:border-brand-500 focus:outline-none transition-colors"
@@ -69,8 +69,8 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Access Key</label>
-                <button type="button" onClick={() => setShowForgot(true)} className="text-sm font-medium text-brand-400 hover:text-brand-300">Recover Key</button>
+                <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+                <button type="button" onClick={() => setShowForgot(true)} className="text-sm font-medium text-brand-400 hover:text-brand-300">Recover Password</button>
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -100,14 +100,14 @@ export default function LoginPage() {
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
-                <>Authenticate <ArrowRight size={20} /></>
+                <>Sign In <ArrowRight size={20} /></>
               )}
             </button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center">
             <p className="text-base text-slate-400">
-              Not registered? <Link to="/register" className="text-white font-bold hover:text-brand-400 transition-colors">Request a Node</Link>
+              Not registered? <Link to="/register" className="text-white font-bold hover:text-brand-400 transition-colors">Create Account</Link>
             </p>
           </div>
         </div>
@@ -120,8 +120,8 @@ export default function LoginPage() {
             <button onClick={() => setShowForgot(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white">
               <X size={20} />
             </button>
-            <h3 className="text-xl font-bold text-white mb-2">Recover Access Key</h3>
-            <p className="text-sm text-slate-400 mb-6">Enter your institutional email address to receive recovery instructions.</p>
+            <h3 className="text-xl font-bold text-white mb-2">Recover Password</h3>
+            <p className="text-sm text-slate-400 mb-6">Enter your email address to receive recovery instructions.</p>
             
             <form onSubmit={handleForgotSubmit} className="flex flex-col gap-4">
               <div className="relative">
@@ -129,7 +129,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   required
-                  placeholder="analyst@bank.co.uk"
+                  placeholder="you@example.com"
                   value={forgotEmail}
                   onChange={e => setForgotEmail(e.target.value)}
                   className="w-full bg-graphite-900 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:border-brand-500 focus:outline-none"
