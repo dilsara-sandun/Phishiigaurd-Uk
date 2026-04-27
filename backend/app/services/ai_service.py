@@ -8,8 +8,10 @@ chatbot conversations using either:
 """
 
 import logging
+import re
 from typing import Any
 import httpx
+from fastapi import HTTPException, status
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -135,6 +137,39 @@ def _template_explanation(
     )
 
 
+def _sanitize_message(message: str) -> str:
+    """
+    Detect and mitigate common LLM prompt injection patterns.
+    """
+    if len(message) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message too long (max 500 characters)"
+        )
+    
+    # List of common prompt injection keywords/patterns
+    injection_patterns = [
+        r"ignore previous instructions",
+        r"disregard all previous",
+        r"system:",
+        r"user:",
+        r"assistant:",
+        r"new instruction:",
+        r"forget everything",
+        r"bypass security",
+    ]
+    
+    for pattern in injection_patterns:
+        if re.search(pattern, message, re.IGNORECASE):
+            logger.warning("Potential prompt injection detected: %s", message)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Potentially malicious input detected. Please rephrase your message."
+            )
+    
+    return message
+
+
 # ── Public entry points ──────────────────────────────────────────────────────
 
 async def generate_explanation(
@@ -164,6 +199,7 @@ async def generate_explanation(
 
 async def generate_chat_response(message: str) -> str:
     """Generate a general chat response for the dashboard chatbot."""
+    message = _sanitize_message(message)
     if settings.GEMINI_API_KEY:
         try:
             return await _call_gemini(message, system_prompt=_CHAT_SYSTEM_PROMPT)

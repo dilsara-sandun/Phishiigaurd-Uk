@@ -11,7 +11,7 @@ Support endpoints:
 
 import uuid
 import logging
-
+import bleach
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -167,11 +167,14 @@ async def create_ticket(
             detail=f"feedback_type must be one of: {', '.join(allowed_types)}",
         )
 
+    # Sanitize user comment (XSS prevention)
+    clean_comment = bleach.clean(body.comment or "") if body.comment else None
+    
     ticket = SupportTicket(
         user_id=current_user.id,
         scan_id=body.scan_id,
         feedback_type=body.feedback_type,
-        comment=body.comment,
+        comment=clean_comment,
         status="open",
     )
     db.add(ticket)
@@ -263,7 +266,8 @@ async def update_ticket(
     if body.status and body.status in allowed_statuses:
         ticket.status = body.status
     if body.admin_note is not None:
-        ticket.admin_note = body.admin_note
+        # Sanitize admin note (XSS prevention)
+        ticket.admin_note = bleach.clean(body.admin_note)
 
     await db.flush()
 

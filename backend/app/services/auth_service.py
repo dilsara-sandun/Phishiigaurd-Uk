@@ -150,7 +150,17 @@ async def verify_otp(db: AsyncSession, email: str, otp: str) -> User:
         raise ValueError("User not found")
     
     if user.verify_token != otp:
-        raise ValueError("Invalid OTP code")
+        user.verify_token_attempts += 1
+        await db.flush()
+        
+        if user.verify_token_attempts >= 3:
+            user.verify_token = None
+            user.verify_token_expires = None
+            user.verify_token_attempts = 0
+            await db.flush()
+            raise ValueError("Too many failed attempts. This OTP has been invalidated. Please request a new one.")
+            
+        raise ValueError(f"Invalid OTP code. {3 - user.verify_token_attempts} attempts remaining.")
     
     now = datetime.now(tz=timezone.utc)
     if user.verify_token_expires and user.verify_token_expires < now:
@@ -159,6 +169,7 @@ async def verify_otp(db: AsyncSession, email: str, otp: str) -> User:
     user.is_verified = True
     user.verify_token = None
     user.verify_token_expires = None
+    user.verify_token_attempts = 0
     await db.flush()
     return user
 
@@ -173,6 +184,7 @@ async def create_password_reset_token(db: AsyncSession, email: str) -> str:
     token, expires = _generate_reset_token()
     user.verify_token = token
     user.verify_token_expires = expires
+    user.verify_token_attempts = 0
     await db.flush()
     return token
 

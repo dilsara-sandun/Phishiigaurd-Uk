@@ -58,3 +58,5 @@ httpx==0.27.0
 
 # ── Logging / utilities ───────────────────────────────────────────────────────
 python-dotenv==1.0.1
+bleach==6.1.0
+python-magic-bin==0.4.14

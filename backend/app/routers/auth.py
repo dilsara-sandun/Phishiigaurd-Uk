@@ -67,7 +67,7 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
         value=access_token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="strict",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
@@ -76,7 +76,7 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
         value=refresh_token,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="strict",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
         path="/api/auth/refresh",   # restrict refresh cookie to the refresh endpoint
     )
@@ -158,9 +158,12 @@ async def login(
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
 
+    # Session Rotation: Clear existing cookies before setting new ones
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
+    
     _set_token_cookies(response, access_token, refresh_token)
-
-    logger.info("User logged in: %s (role=%s)", user.email, user.role)
+    logger.info("User logged in (Session Rotated): %s (role=%s)", user.email, user.role)
 
     return TokenResponse(
         access_token=access_token,

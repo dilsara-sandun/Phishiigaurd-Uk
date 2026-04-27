@@ -14,6 +14,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+import magic
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -342,13 +343,16 @@ async def scan_email_file(
             detail="File must be smaller than 1 MB",
         )
 
-    allowed = {"text/plain", "message/rfc822", "application/octet-stream"}
-    if file.content_type not in allowed and not (
-        file.filename or ""
-    ).endswith((".eml", ".txt")):
+    # Use magic-bytes to verify file content type (mitigates renamed malicious files)
+    mime = magic.Magic(mime=True)
+    detected_mime = mime.from_buffer(raw_bytes)
+    
+    allowed_mimes = {"text/plain", "message/rfc822"}
+    if detected_mime not in allowed_mimes:
+        logger.warning("Rejected file upload with suspicious mime type: %s", detected_mime)
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Only .eml or .txt files are accepted",
+            detail="File content does not match allowed types (.eml or .txt)",
         )
 
     # Parse .eml headers and body
