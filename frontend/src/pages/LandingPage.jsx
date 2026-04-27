@@ -83,15 +83,87 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right 3D Object Showcase */}
-          <div className="relative h-[600px] flex items-center justify-center">
-            {/* Fallback rendering if 3D image isn't available */}
-            <div className="absolute w-[400px] h-[400px] border border-white/5 bg-midnight-900/50 rounded-full backdrop-blur-3xl flex items-center justify-center shadow-[0_0_100px_rgba(6,182,212,0.15)]">
-               <Shield size={120} className="text-brand-500 opacity-80" style={{ filter: 'drop-shadow(0 0 40px rgba(6,182,212,0.6))' }} />
-               {/* Orbital rings */}
-               <div className="absolute inset-0 border border-brand-500/20 rounded-full animate-[spin_10s_linear_infinite]" />
-               <div className="absolute inset-4 border border-brand-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
+          {/* Right Dashboard Visualization */}
+          <div className="relative h-[600px] flex items-center justify-center scale-90 md:scale-100">
+            {/* Main Dashboard Panel */}
+            <div className="relative w-full max-w-[500px] aspect-[4/3] bg-midnight-950/40 border border-white/10 rounded-3xl backdrop-blur-2xl p-8 shadow-2xl overflow-hidden group">
+              {/* Animated scanning line */}
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent animate-[scan_3s_ease-in-out_infinite] opacity-50" />
+              
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center">
+                    <Shield size={18} className="text-brand-400" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Real-time Monitor</div>
+                    <div className="text-white font-bold text-sm">Security Node #042</div>
+                  </div>
+                </div>
+                <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                  System Active
+                </div>
+              </div>
+
+              {/* Data Visualization Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                  <div className="text-[10px] text-slate-500 font-bold uppercase mb-2">Threat Score</div>
+                  <div className="text-3xl font-black text-brand-400 tracking-tighter">0.02</div>
+                  <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-brand-500 w-[2%]" />
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                  <div className="text-[10px] text-slate-500 font-bold uppercase mb-2">Confidence</div>
+                  <div className="text-3xl font-black text-white tracking-tighter">99.8%</div>
+                  <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 w-[99.8%]" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live URL Scan Feed */}
+              <div className="space-y-3">
+                {[
+                  { url: "hsbc.co.uk/personal/login", status: "LEGIT", color: "text-emerald-400", bg: "bg-emerald-500/10" },
+                  { url: "secure-hsbc-verify.net", status: "PHISHING", color: "text-red-400", bg: "bg-red-500/10" },
+                  { url: "amazon.co.uk/gp/home", status: "LEGIT", color: "text-emerald-400", bg: "bg-emerald-500/10" }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.05] transition-colors">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className={`w-2 h-2 rounded-full ${item.status === 'LEGIT' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      <div className="text-[11px] font-mono text-slate-400 truncate">{item.url}</div>
+                    </div>
+                    <div className={`${item.color} text-[9px] font-black tracking-widest px-2 py-0.5 rounded ${item.bg}`}>
+                      {item.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Decorative elements */}
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-brand-500/10 blur-3xl rounded-full" />
+              <div className="absolute -top-10 -left-10 w-40 h-40 bg-brand-500/10 blur-3xl rounded-full" />
             </div>
+
+            {/* Floating Stats Cards */}
+            <div className="absolute -top-10 -right-6 bg-midnight-900 border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_6s_ease-in-out_infinite]">
+              <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Daily Scans</div>
+              <div className="text-xl font-bold text-white">2.4M+</div>
+            </div>
+            
+            <div className="absolute -bottom-6 -left-6 bg-midnight-900 border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_7s_ease-in-out_infinite_1s]">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield size={12} className="text-brand-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Blocked</span>
+              </div>
+              <div className="text-xl font-bold text-red-400">18.2K</div>
+            </div>
+
+            {/* Background decorative rings */}
+            <div className="absolute w-[600px] h-[600px] border border-white/5 rounded-full pointer-events-none -z-10" />
+            <div className="absolute w-[400px] h-[400px] border border-white/5 rounded-full pointer-events-none -z-10 animate-pulse" />
           </div>
         </div>
       </main>
