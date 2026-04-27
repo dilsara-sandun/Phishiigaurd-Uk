@@ -15,9 +15,24 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 # ── Registration ───────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
+    """
+    Registration request.
+    Accepts any valid email address — corporate, personal (Gmail/Outlook),
+    university, or banking domain.
+    confirm_password is optional; when omitted it defaults to the value of
+    password so single-field frontend forms still pass validation.
+    """
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
-    confirm_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str | None = Field(default=None, min_length=8, max_length=128)
+
+    @field_validator("confirm_password", mode="before")
+    @classmethod
+    def default_confirm_password(cls, v, info):
+        """If confirm_password is not provided, treat it as equal to password."""
+        if v is None:
+            return info.data.get("password")
+        return v
 
     @field_validator("confirm_password")
     @classmethod

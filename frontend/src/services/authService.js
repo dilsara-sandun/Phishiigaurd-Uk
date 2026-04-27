@@ -6,8 +6,12 @@ export const login = async (email, password) => {
   return response.data
 }
 
-export const register = async (email, password) => {
-  const payload = { email, password }
+export const register = async (email, password, confirmPassword) => {
+  const payload = {
+    email,
+    password,
+    confirm_password: confirmPassword ?? password,   // default to same if not provided
+  }
   const response = await api.post('/auth/register', payload)
   return response.data
 }

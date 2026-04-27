@@ -47,6 +47,7 @@ from app.services.auth_service import (
 from app.services.notification_service import (
     send_otp_email,
     send_password_reset_email,
+    send_password_changed_email,
 )
 from app.config import settings
 import uuid
@@ -294,12 +295,29 @@ async def reset_password(
     body: ResetPasswordRequest,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
+    """
+    Reset the user's password using a valid token.
+
+    Steps:
+      1. Validate the token and update the password_hash in the DB.
+      2. Commit immediately so the DB is always the source of truth.
+      3. Fire a "your password was changed" confirmation email asynchronously.
+    """
     try:
-        await reset_password_with_token(db, body.token, body.new_password)
+        user = await reset_password_with_token(db, body.token, body.new_password)
+        # ── Commit first: DB is always the source of truth ──────────────────────
         await db.commit()
+        logger.info("Password reset successful for user: %s", user.email)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
-    
+
+    # ── Send confirmation email (non-blocking — DB already committed) ───────────
+    try:
+        await send_password_changed_email(user.email)
+    except Exception as exc:
+        # Email failure must never break the password-reset flow
+        logger.error("Failed to send password-changed email to %s: %s", user.email, exc)
+
     return MessageResponse(message="Password has been reset successfully.")
 
 
