@@ -33,7 +33,7 @@ export default function DomainDNS() {
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="e.g. lloyds-verify.top"
-              className="w-full bg-navy-950 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
+              className="w-full bg-graphite-900 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
                          text-slate-200 placeholder-slate-500 font-mono text-sm
                          focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 transition-all"
               disabled={loading}
@@ -80,13 +80,13 @@ export default function DomainDNS() {
                <div className="space-y-4 font-mono text-xs">
                  <div>
                    <span className="text-slate-500 block mb-1">A Records (IPs)</span>
-                   <div className="bg-navy-950 p-2 rounded text-slate-300">
+                   <div className="bg-graphite-900 p-2 rounded text-slate-300">
                      {result.dns_info.a_records.length > 0 ? result.dns_info.a_records.join(', ') : 'None'}
                    </div>
                  </div>
                  <div>
                    <span className="text-slate-500 block mb-1">MX Records (Mail)</span>
-                   <div className="bg-navy-950 p-2 rounded text-slate-300">
+                   <div className="bg-graphite-900 p-2 rounded text-slate-300">
                      {result.dns_info.mx_records.length > 0 ? result.dns_info.mx_records.join('\n') : 'No Mail Servers'}
                    </div>
                  </div>

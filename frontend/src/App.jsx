@@ -13,12 +13,20 @@ import AnalysisCentre from './pages/AnalysisCentre'
 import HistoryPage from './pages/HistoryPage'
 import SupportPage from './pages/SupportPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import LandingPage from './pages/LandingPage'
+import PlatformPage from './pages/PlatformPage'
+import BlogPage from './pages/BlogPage'
+import GamePage from './pages/GamePage'
 
 export default function App() {
   return (
     <AuthProvider>
       <ScanProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/platform" element={<PlatformPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/test-knowledge" element={<GamePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -32,14 +40,13 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<OverviewDashboard />} />
             <Route path="analysis" element={<AnalysisCentre />} />
             <Route path="history" element={<HistoryPage />} />
             <Route path="support" element={<SupportPage />} />
           </Route>
           
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ScanProvider>
     </AuthProvider>

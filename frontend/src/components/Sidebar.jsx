@@ -36,7 +36,7 @@ function NavItem({ item, collapsed }) {
       <Icon size={18} className="flex-shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
       {collapsed && (
-        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-navy-700 text-white text-xs
+        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-midnight-800 text-white text-xs
                         rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none
                         whitespace-nowrap z-50 border border-white/10 transition-opacity duration-150">
           {label}
@@ -53,7 +53,7 @@ export default function Sidebar({ open, setOpen }) {
     <aside
       className={clsx(
         'fixed top-0 left-0 h-screen z-40 flex flex-col',
-        'bg-gradient-navy border-r border-white/[0.06]',
+        'bg-gradient-to-b from-midnight-900 to-graphite-900 border-r border-white/[0.06]',
         'transition-all duration-300 ease-in-out',
         collapsed ? 'w-16' : 'w-64'
       )}

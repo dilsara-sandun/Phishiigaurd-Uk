@@ -35,7 +35,7 @@ export default function Navbar({ onToggleSidebar }) {
 
   return (
     <header className="sticky top-0 z-30 h-16 flex items-center px-6
-                        bg-navy-900/80 backdrop-blur-md border-b border-white/[0.06]">
+                        bg-graphite-800/80 backdrop-blur-md border-b border-white/[0.06]">
       {/* Left: toggle + breadcrumb */}
       <div className="flex items-center gap-4 min-w-0">
         <button

@@ -28,7 +28,7 @@ export default function EmailAnalyser() {
           onDragLeave={() => setIsHovering(false)}
           onDrop={(e) => { e.preventDefault(); setIsHovering(false) }}
         >
-          <div className="w-12 h-12 rounded-full bg-navy-800 flex items-center justify-center mx-auto mb-4 border border-white/[0.05] shadow-inner text-slate-400">
+          <div className="w-12 h-12 rounded-full bg-midnight-800 flex items-center justify-center mx-auto mb-4 border border-white/[0.05] shadow-inner text-slate-400">
             <Upload size={20} />
           </div>
           <p className="text-sm text-slate-300 mb-1">Drag and drop .eml file here</p>

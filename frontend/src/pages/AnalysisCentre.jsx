@@ -15,7 +15,7 @@ export default function AnalysisCentre() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-navy-900 border border-white/[0.08] p-1 rounded-xl w-fit">
+      <div className="flex bg-graphite-800 border border-white/[0.08] p-1 rounded-xl w-fit">
         <button
           onClick={() => setActiveTab('url')}
           className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${

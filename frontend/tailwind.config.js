@@ -4,22 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: '#040d21',
-          900: '#0a1628',
-          850: '#0f1f38',
-          800: '#132240',
-          700: '#1a2f55',
-          600: '#1e3a6e',
-          500: '#2252a4',
+        graphite: {
+          900: '#0d1117',
+          800: '#161b22',
+          700: '#21262d',
         },
-        brand: {
-          50:  '#eff6ff',
-          100: '#dbeafe',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
+        midnight: {
+          900: '#020617',
+          800: '#0f172a',
+          700: '#1e293b',
+        },
+        brand: { // Teal/Cyan replacing blue
+          50:  '#ecfeff',
+          100: '#cffafe',
+          400: '#22d3ee',
+          500: '#06b6d4',
+          600: '#0891b2',
+          700: '#0e7490',
         },
         danger: {
           50:  '#fef2f2',
@@ -51,8 +52,8 @@ export default {
         'inner':   'inset 0 1px 4px rgba(0,0,0,.06)',
       },
       backgroundImage: {
-        'gradient-navy':   'linear-gradient(135deg,#0a1628 0%,#132240 100%)',
-        'gradient-brand':  'linear-gradient(135deg,#2563eb 0%,#7c3aed 100%)',
+        'gradient-navy':   'linear-gradient(135deg,#020617 0%,#0f172a 100%)',
+        'gradient-brand':  'linear-gradient(135deg,#06b6d4 0%,#0891b2 100%)', // Teal
         'gradient-danger': 'linear-gradient(135deg,#dc2626 0%,#9f1239 100%)',
         'gradient-safe':   'linear-gradient(135deg,#16a34a 0%,#0f766e 100%)',
         'gradient-warn':   'linear-gradient(135deg,#d97706 0%,#b45309 100%)',

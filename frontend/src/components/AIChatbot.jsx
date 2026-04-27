@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { MessageSquare, x, Send, Shield, Bot, User, Minimize2, Maximize2, X } from 'lucide-react'
+import { MessageSquare, Send, Shield, Bot, User, Minimize2, Maximize2, X } from 'lucide-react'
 import api from '../services/api'
 
 export default function AIChatbot() {

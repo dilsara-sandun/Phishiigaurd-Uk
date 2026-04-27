@@ -42,7 +42,7 @@ export default function HistoryPage() {
             <input 
               type="text" 
               placeholder="Search URLs..." 
-              className="bg-navy-900 border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-brand-500/50 outline-none w-64"
+              className="bg-graphite-800 border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-brand-500/50 outline-none w-64"
             />
           </div>
           <button className="btn-secondary py-2 px-3">
