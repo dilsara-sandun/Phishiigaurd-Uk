@@ -115,6 +115,8 @@ async def register(
         email_sent = await send_otp_email(user.email, user.verify_token)
         if not email_sent:
             logger.error("Failed to send OTP email to %s", user.email)
+            
+        return RegisterResponse(user_id=user.id)
         
     except ValueError as exc:
         err_msg = str(exc)
