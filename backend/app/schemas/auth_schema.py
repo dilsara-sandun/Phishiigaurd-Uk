@@ -23,8 +23,8 @@ class RegisterRequest(BaseModel):
     password so single-field frontend forms pass validation without errors.
     """
     email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    confirm_password: Optional[str] = Field(default=None, max_length=128)
+    password: str = Field(min_length=8, max_length=72)
+    confirm_password: Optional[str] = Field(default=None, max_length=72)
 
     @field_validator("password")
     @classmethod
@@ -35,6 +35,8 @@ class RegisterRequest(BaseModel):
             raise ValueError("Password must contain at least one digit")
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError("Password cannot exceed 72 bytes")
         return v
 
     @model_validator(mode="after")
@@ -60,7 +62,7 @@ class RegisterResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=1, max_length=72)
 
 
 class TokenResponse(BaseModel):
@@ -93,7 +95,20 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=72)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError("Password cannot exceed 72 bytes")
+        return v
 
 
 # ── Current user (returned by /auth/me) ──────────────────────────────────────

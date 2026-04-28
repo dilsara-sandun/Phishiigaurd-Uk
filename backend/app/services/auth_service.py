@@ -9,8 +9,8 @@ import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,17 +18,19 @@ from app.config import settings
 from app.models.user import User
 
 # ── Password hashing ──────────────────────────────────────────────────────────
-_pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 def hash_password(plain: str) -> str:
     """Return the bcrypt hash of *plain*."""
-    return _pwd_ctx.hash(plain)
+    pwd_bytes = plain.encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Return True if *plain* matches the stored *hashed* password."""
-    return _pwd_ctx.verify(plain, hashed)
+    pwd_bytes = plain.encode('utf-8')
+    hashed_bytes = hashed.encode('utf-8')
+    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
 
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
@@ -103,7 +105,17 @@ async def register_user(db: AsyncSession, email: str, password: str) -> User:
     """
     existing = await get_user_by_email(db, email)
     if existing is not None:
-        raise ValueError("An account with this email address already exists")
+        if existing.is_verified:
+            raise ValueError("An account with this email address already exists")
+        else:
+            # User exists but not verified. Update OTP and resend!
+            otp, token_expires = _generate_otp()
+            existing.verify_token = otp
+            existing.verify_token_expires = token_expires
+            existing.verify_token_attempts = 0
+            existing.password_hash = hash_password(password)
+            await db.flush()
+            return existing
 
     otp, token_expires = _generate_otp()
 
