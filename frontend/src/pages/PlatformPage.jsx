@@ -33,17 +33,17 @@ export default function PlatformPage() {
   };
 
   return (
-    <div className="min-h-screen bg-graphite-900 text-slate-300 font-sans selection:bg-brand-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-600 font-sans selection:bg-brand-500/30">
       
       {/* Navbar (Simplified for secondary page) */}
-      <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-graphite-900/90 border-b border-white/5">
+      <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-slate-50/90 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <Shield size={18} className="text-brand-500" />
             <span className="text-white font-bold tracking-tight">PhishGuard UK</span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Access Console</Link>
+            <Link to="/login" className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">Access Console</Link>
           </div>
         </div>
       </nav>
@@ -67,7 +67,7 @@ export default function PlatformPage() {
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all text-left ${
                     activeSection === id 
                       ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
-                      : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-white/5 border border-transparent'
                   }`}
                 >
                   <Icon size={16} className={activeSection === id ? 'text-brand-400' : 'text-slate-500'} />
@@ -83,18 +83,18 @@ export default function PlatformPage() {
           
           {/* Platform Section */}
           <section id="platform" className="scroll-mt-32">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-slate-200 mb-6">
               <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">System Overview</span>
             </div>
-            <h1 className="text-4xl font-extrabold text-white tracking-tight mb-6">
+            <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-6">
               A full-stack phishing detection platform built for speed, trust, and scale.
             </h1>
-            <p className="text-lg text-slate-400 mb-12 leading-relaxed">
+            <p className="text-lg text-slate-500 mb-12 leading-relaxed">
               PhishGuard UK combines frontend intelligence, asynchronous scanning APIs, threat feed synchronization, and analyst-friendly reporting in one secure workflow.
             </p>
             
             {/* Diagram Placeholder */}
-            <div className="w-full h-80 bg-midnight-900 border border-white/5 rounded-2xl mb-12 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+            <div className="w-full h-80 bg-white border border-white/5 rounded-2xl mb-12 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
                {/* <img src="/platform-stack.png" alt="Architecture Stack" className="absolute inset-0 w-full h-full object-cover opacity-80" /> */}
                <div className="absolute inset-0 bg-gradient-to-t from-midnight-900 to-transparent" />
                <Layers size={64} className="text-brand-500/50 mb-4 relative z-10" />
@@ -110,9 +110,9 @@ export default function PlatformPage() {
                 "APScheduler background jobs",
                 "DNS & WHOIS enrichment layer"
               ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <div key={i} className="flex items-start gap-3 bg-slate-50 border border-white/5 p-4 rounded-xl">
                   <CheckCircle2 size={18} className="text-brand-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-300 font-medium">{feature}</span>
+                  <span className="text-sm text-slate-600 font-medium">{feature}</span>
                 </div>
               ))}
             </div>
@@ -120,17 +120,17 @@ export default function PlatformPage() {
 
           {/* AI Engine Section */}
           <section id="ai-engine" className="scroll-mt-32">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-slate-200 mb-6">
               <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Intelligence Core</span>
             </div>
-            <h2 className="text-4xl font-extrabold text-white tracking-tight mb-6">
+            <h2 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-6">
               Machine learning that explains every phishing verdict.
             </h2>
-            <p className="text-lg text-slate-400 mb-12 leading-relaxed">
+            <p className="text-lg text-slate-500 mb-12 leading-relaxed">
               The platform analyzes URL structure, domain behavior, and email language patterns, then translates model reasoning into plain-English insights.
             </p>
 
-            <div className="w-full h-80 bg-midnight-900 border border-white/5 rounded-2xl mb-12 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
+            <div className="w-full h-80 bg-white border border-white/5 rounded-2xl mb-12 flex flex-col items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden">
                {/* <img src="/ai-pipeline.png" alt="AI Pipeline" className="absolute inset-0 w-full h-full object-cover opacity-80" /> */}
                <div className="absolute inset-0 bg-gradient-to-t from-midnight-900 to-transparent" />
                <Brain size={64} className="text-brand-500/50 mb-4 relative z-10" />
@@ -146,9 +146,9 @@ export default function PlatformPage() {
                 "SHAP explainability engine",
                 "Ollama/Gemini narrative summaries"
               ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <div key={i} className="flex items-start gap-3 bg-slate-50 border border-white/5 p-4 rounded-xl">
                   <CheckCircle2 size={18} className="text-brand-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-300 font-medium">{feature}</span>
+                  <span className="text-sm text-slate-600 font-medium">{feature}</span>
                 </div>
               ))}
             </div>
@@ -156,18 +156,18 @@ export default function PlatformPage() {
 
           {/* API Docs Section */}
           <section id="api-docs" className="scroll-mt-32">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-slate-200 mb-6">
               <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Integration</span>
             </div>
-            <h2 className="text-4xl font-extrabold text-white tracking-tight mb-6">
+            <h2 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-6">
               Developer-first APIs for real-time scanning.
             </h2>
-            <p className="text-lg text-slate-400 mb-12 leading-relaxed">
+            <p className="text-lg text-slate-500 mb-12 leading-relaxed">
               Integrate phishing checks into browsers, dashboards, mail workflows, and SOC tools through secure, documented endpoints.
             </p>
 
-            <div className="bg-graphite-800 border border-white/10 rounded-2xl overflow-hidden mb-12">
-              <div className="bg-graphite-900 border-b border-white/10 px-4 py-3 flex items-center gap-2">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden mb-12">
+              <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-slate-600" />
                 <div className="w-3 h-3 rounded-full bg-slate-600" />
                 <div className="w-3 h-3 rounded-full bg-slate-600" />
@@ -175,19 +175,19 @@ export default function PlatformPage() {
               </div>
               <div className="p-6">
                 <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-4 bg-midnight-900/50 p-3 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-4 bg-white/50 p-3 rounded-lg border border-white/5">
                     <span className="text-brand-400 font-mono text-sm font-bold bg-brand-500/10 px-2 py-1 rounded">POST</span>
-                    <span className="text-slate-300 font-mono text-sm">/api/url/scan</span>
+                    <span className="text-slate-600 font-mono text-sm">/api/url/scan</span>
                     <span className="ml-auto text-xs text-slate-500 border border-slate-700 px-2 py-1 rounded">Bearer Auth</span>
                   </div>
-                  <div className="flex items-center gap-4 bg-midnight-900/50 p-3 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-4 bg-white/50 p-3 rounded-lg border border-white/5">
                     <span className="text-brand-400 font-mono text-sm font-bold bg-brand-500/10 px-2 py-1 rounded">POST</span>
-                    <span className="text-slate-300 font-mono text-sm">/api/email/analyze</span>
+                    <span className="text-slate-600 font-mono text-sm">/api/email/analyze</span>
                     <span className="ml-auto text-xs text-slate-500 border border-slate-700 px-2 py-1 rounded">Bearer Auth</span>
                   </div>
-                  <div className="flex items-center gap-4 bg-midnight-900/50 p-3 rounded-lg border border-white/5">
+                  <div className="flex items-center gap-4 bg-white/50 p-3 rounded-lg border border-white/5">
                     <span className="text-green-400 font-mono text-sm font-bold bg-green-500/10 px-2 py-1 rounded">GET</span>
-                    <span className="text-slate-300 font-mono text-sm">/api/intel/history</span>
+                    <span className="text-slate-600 font-mono text-sm">/api/intel/history</span>
                     <span className="ml-auto text-xs text-slate-500 border border-slate-700 px-2 py-1 rounded">Bearer Auth</span>
                   </div>
                 </div>
@@ -203,9 +203,9 @@ export default function PlatformPage() {
                 "Rate limiting middleware",
                 "Swagger/OpenAPI readiness"
               ].map((feature, i) => (
-                <div key={i} className="flex items-start gap-3 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
+                <div key={i} className="flex items-start gap-3 bg-slate-50 border border-white/5 p-4 rounded-xl">
                   <CheckCircle2 size={18} className="text-brand-400 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-slate-300 font-medium">{feature}</span>
+                  <span className="text-sm text-slate-600 font-medium">{feature}</span>
                 </div>
               ))}
             </div>
@@ -216,15 +216,15 @@ export default function PlatformPage() {
             <div className="bg-gradient-to-br from-midnight-900 to-graphite-900 border border-white/5 rounded-3xl p-10 lg:p-16 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 blur-[100px] rounded-full pointer-events-none" />
               
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-slate-200 mb-8 relative z-10">
                 <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Mission</span>
               </div>
               
-              <h2 className="text-3xl lg:text-5xl font-extrabold text-white tracking-tight mb-8 relative z-10">
+              <h2 className="text-3xl lg:text-5xl font-extrabold text-slate-800 tracking-tight mb-8 relative z-10">
                 Built to make phishing defense understandable.
               </h2>
               
-              <p className="text-xl text-slate-400 mb-12 leading-relaxed relative z-10 font-medium">
+              <p className="text-xl text-slate-500 mb-12 leading-relaxed relative z-10 font-medium">
                 PhishGuard UK was designed as a practical security platform that combines machine learning accuracy with transparent explanations for real users.
               </p>
 
@@ -238,7 +238,7 @@ export default function PlatformPage() {
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-1.5 h-1.5 rounded-full bg-brand-500" />
-                    <span className="text-slate-300 font-medium">{feature}</span>
+                    <span className="text-slate-600 font-medium">{feature}</span>
                   </div>
                 ))}
               </div>

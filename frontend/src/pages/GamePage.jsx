@@ -163,18 +163,18 @@ export default function GamePage() {
   };
 
   return (
-    <div className="min-h-screen bg-graphite-900 text-slate-300 font-sans selection:bg-brand-500/30 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-600 font-sans selection:bg-brand-500/30 flex flex-col">
       
       {/* Minimal Navbar */}
-      <nav className="w-full backdrop-blur-xl bg-graphite-900/70 border-b border-white/5">
+      <nav className="w-full backdrop-blur-xl bg-slate-50/70 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)] group-hover:scale-105 transition-transform">
-              <Shield size={20} className="text-white" />
+              <Shield size={20} className="text-slate-800" />
             </div>
-            <span className="text-white font-extrabold tracking-tight text-xl group-hover:text-brand-300 transition-colors">PhishGuard UK</span>
+            <span className="text-slate-800 font-extrabold tracking-tight text-xl group-hover:text-brand-300 transition-colors">PhishGuard UK</span>
           </Link>
-          <Link to="/" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors">
+          <Link to="/" className="text-sm font-semibold text-slate-500 hover:text-slate-800 transition-colors">
             &larr; Back to Platform
           </Link>
         </div>
@@ -185,15 +185,15 @@ export default function GamePage() {
         {/* Ambient glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/5 blur-[150px] rounded-full pointer-events-none" />
 
-        <div className="max-w-2xl w-full bg-midnight-900 border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl relative z-10 backdrop-blur-xl">
+        <div className="max-w-2xl w-full bg-white border border-slate-200 rounded-3xl p-8 md:p-12 shadow-2xl relative z-10 backdrop-blur-xl">
           
           {gameState === 'start' && (
             <div className="text-center animate-in fade-in zoom-in duration-500">
               <div className="w-20 h-20 bg-brand-500/10 border border-brand-500/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <AlertTriangle size={40} className="text-brand-400" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">Test Your Knowledge</h1>
-              <p className="text-slate-400 text-lg mb-10 max-w-lg mx-auto">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-4 tracking-tight">Test Your Knowledge</h1>
+              <p className="text-slate-500 text-lg mb-10 max-w-lg mx-auto">
                 Phishing attacks often rely on slightly altered domain names. We will show you 5 URLs related to major brands, banks, and services. Your task is to identify the <strong className="text-emerald-400">legitimate</strong> one.
               </p>
               <button 
@@ -214,7 +214,7 @@ export default function GamePage() {
                 </span>
               </div>
               
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 text-center leading-tight">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-8 text-center leading-tight">
                 Which URL is <span className="text-emerald-400">legitimate</span>?
               </h2>
 
@@ -223,7 +223,7 @@ export default function GamePage() {
                   let buttonClass = "w-full p-5 rounded-xl border text-left flex items-center justify-between font-mono text-lg transition-all duration-300 ";
                   
                   if (gameState === 'playing') {
-                    buttonClass += "bg-graphite-800 border-white/10 text-slate-300 hover:border-brand-500/50 hover:bg-white/5 cursor-pointer";
+                    buttonClass += "bg-white border-slate-200 text-slate-600 hover:border-brand-500/50 hover:bg-white/5 cursor-pointer";
                   } else {
                     // Feedback state
                     buttonClass += "cursor-default ";
@@ -232,7 +232,7 @@ export default function GamePage() {
                     } else if (selectedOption === option && !option.isLegit) {
                       buttonClass += "bg-red-900/30 border-red-500/50 text-red-400";
                     } else {
-                      buttonClass += "bg-graphite-800/50 border-white/5 text-slate-600 opacity-50";
+                      buttonClass += "bg-white/50 border-white/5 text-slate-600 opacity-50";
                     }
                   }
 
@@ -287,14 +287,14 @@ export default function GamePage() {
               </div>
               
               <h1 className={`text-3xl font-bold mb-4 ${getScoreMessage().color}`}>{getScoreMessage().title}</h1>
-              <p className="text-slate-400 text-lg mb-10 max-w-md mx-auto">
+              <p className="text-slate-500 text-lg mb-10 max-w-md mx-auto">
                 {getScoreMessage().text}
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button 
                   onClick={startGame}
-                  className="px-6 py-3 rounded-xl bg-graphite-800 border border-white/10 hover:bg-graphite-700 text-white font-bold transition-all flex items-center gap-2 w-full sm:w-auto justify-center"
+                  className="px-6 py-3 rounded-xl bg-white border border-slate-200 hover:bg-graphite-700 text-white font-bold transition-all flex items-center gap-2 w-full sm:w-auto justify-center"
                 >
                   <RefreshCw size={18} /> Retry Simulation
                 </button>

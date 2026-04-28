@@ -107,7 +107,7 @@ export default function OverviewDashboard() {
               <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
                 <ShieldCheck className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Letigimacy Ratio
               </h3>
-              <p className="text-sm 2xl:text-base text-slate-400 mb-4">Distribution of scanned URLs in the last 24h</p>
+              <p className="text-sm 2xl:text-base text-slate-500 mb-4">Distribution of scanned URLs in the last 24h</p>
               <div className="flex-1 min-h-0">
                 <RiskDonut data={donutData} />
               </div>
@@ -117,7 +117,7 @@ export default function OverviewDashboard() {
               <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
                 <Globe2 className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Targeted Brands
               </h3>
-              <p className="text-sm 2xl:text-base text-slate-400 mb-4">Most spoofed corporate identities</p>
+              <p className="text-sm 2xl:text-base text-slate-500 mb-4">Most spoofed corporate identities</p>
               <div className="flex-1 min-h-0">
                 <BrandsBar data={barData} />
               </div>
@@ -133,7 +133,7 @@ export default function OverviewDashboard() {
                   <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl text-fuchsia-400">
                     <Zap className="w-6 h-6 2xl:w-8 2xl:h-8" /> LLM Token Analytics
                   </h3>
-                  <p className="text-sm 2xl:text-base text-slate-400 mt-2 max-w-2xl">
+                  <p className="text-sm 2xl:text-base text-slate-500 mt-2 max-w-2xl">
                     Our Phi-3 AI model processes webpage content by breaking text down into "Tokens" (words or sub-words). 
                     Monitoring token throughput ensures our LLM remains highly performant during real-time phishing analysis.
                   </p>
@@ -144,28 +144,28 @@ export default function OverviewDashboard() {
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 2xl:gap-8">
-                <div className="p-5 2xl:p-6 bg-white/[0.02] hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-white/[0.05] relative overflow-hidden">
+                <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-400 mb-2 uppercase tracking-widest font-semibold">Tokens Processed (24h)</p>
-                  <p className="text-3xl 2xl:text-4xl font-black text-white flex items-baseline gap-2">
+                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Tokens Processed (24h)</p>
+                  <p className="text-3xl 2xl:text-4xl font-black text-slate-800 flex items-baseline gap-2">
                     42.8M
                     <span className="text-sm font-medium text-fuchsia-400">+3.1M today</span>
                   </p>
                 </div>
                 
-                <div className="p-5 2xl:p-6 bg-white/[0.02] hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-white/[0.05] relative overflow-hidden">
+                <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-400 mb-2 uppercase tracking-widest font-semibold">Avg. Inference Speed</p>
-                  <p className="text-3xl 2xl:text-4xl font-black text-white flex items-baseline gap-2">
+                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Avg. Inference Speed</p>
+                  <p className="text-3xl 2xl:text-4xl font-black text-slate-800 flex items-baseline gap-2">
                     86 <span className="text-lg 2xl:text-xl font-medium text-slate-500">tokens/sec</span>
                   </p>
                 </div>
 
-                <div className="p-5 2xl:p-6 bg-white/[0.02] hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-white/[0.05] relative overflow-hidden">
+                <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-400 mb-2 uppercase tracking-widest font-semibold">Context Window Usage</p>
+                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Context Window Usage</p>
                   <div className="flex items-center gap-3 mt-3">
-                     <p className="text-xl 2xl:text-2xl font-bold text-white">45%</p>
+                     <p className="text-xl 2xl:text-2xl font-bold text-slate-800">45%</p>
                      <div className="flex-1 h-2.5 2xl:h-3 bg-white/10 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-fuchsia-600 to-pink-500 w-[45%]"></div>
                      </div>
@@ -187,7 +187,7 @@ export default function OverviewDashboard() {
                 </span>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 2xl:gap-8">
-                <div className="p-5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl border border-white/[0.05]">
+                <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
                   <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">XGBoost Engine</p>
                   <p className="text-base 2xl:text-lg font-bold text-safe-400 flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
@@ -197,7 +197,7 @@ export default function OverviewDashboard() {
                     Online
                   </p>
                 </div>
-                <div className="p-5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl border border-white/[0.05]">
+                <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
                   <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">Phi-3 LLM Node</p>
                   <p className="text-base 2xl:text-lg font-bold text-safe-400 flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
@@ -207,14 +207,14 @@ export default function OverviewDashboard() {
                     Local Active
                   </p>
                 </div>
-                <div className="p-5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl border border-white/[0.05]">
+                <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
                   <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">Threat Feed Sync</p>
-                  <p className="text-base 2xl:text-lg font-bold text-slate-200">Just now</p>
+                  <p className="text-base 2xl:text-lg font-bold text-slate-600">Just now</p>
                 </div>
-                <div className="p-5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors rounded-xl border border-white/[0.05]">
+                <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
                   <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">API Rate Limit</p>
                   <div className="flex items-center gap-3">
-                     <p className="text-base 2xl:text-lg font-bold text-slate-200">98%</p>
+                     <p className="text-base 2xl:text-lg font-bold text-slate-600">98%</p>
                      <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
                         <div className="h-full bg-brand-500 w-[98%]"></div>
                      </div>
@@ -230,7 +230,7 @@ export default function OverviewDashboard() {
             <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
               <FileSearch className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Live Threat Feed
             </h3>
-            <p className="text-sm 2xl:text-base text-slate-400 mb-6">Latest phishing alerts from Hacker News</p>
+            <p className="text-sm 2xl:text-base text-slate-500 mb-6">Latest phishing alerts from Hacker News</p>
             <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar">
               <NewsPanel news={news} loading={newsLoading} />
             </div>

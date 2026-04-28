@@ -42,7 +42,7 @@ export default function HistoryPage() {
             <input 
               type="text" 
               placeholder="Search URLs..." 
-              className="bg-graphite-800 border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-brand-500/50 outline-none w-64"
+              className="bg-white border border-white/[0.08] rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 placeholder-slate-500 focus:border-brand-500/50 outline-none w-64"
             />
           </div>
           <button className="btn-secondary py-2 px-3">
@@ -55,7 +55,7 @@ export default function HistoryPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+              <tr className="border-b border-white/[0.06] bg-slate-50">
                 <th className="table-th">Target URL</th>
                 <th className="table-th w-32">Status</th>
                 <th className="table-th w-32">Risk Score</th>
@@ -82,7 +82,7 @@ export default function HistoryPage() {
                   const score = item.risk_score != null ? Math.round(item.risk_score * 100) : '—'
                   
                   return (
-                    <tr key={item.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="table-td">
                         <p className="font-mono text-sm text-slate-200 truncate max-w-[250px] lg:max-w-[400px]">
                           {item.url}
@@ -95,11 +95,11 @@ export default function HistoryPage() {
                       </td>
                       <td className="table-td font-mono">{score}</td>
                       <td className="table-td">
-                         <span className="text-xs bg-white/[0.05] border border-white/[0.1] px-2 py-0.5 rounded text-slate-300">
+                         <span className="text-xs bg-white/[0.05] border border-white/[0.1] px-2 py-0.5 rounded text-slate-600">
                            {item.intel_source ? 'Live Intel' : 'ML Model'}
                          </span>
                       </td>
-                      <td className="table-td text-slate-400 text-xs hidden md:table-cell">
+                      <td className="table-td text-slate-500 text-xs hidden md:table-cell">
                         {new Date(item.created_at).toLocaleString()}
                       </td>
                       <td className="table-td text-center">

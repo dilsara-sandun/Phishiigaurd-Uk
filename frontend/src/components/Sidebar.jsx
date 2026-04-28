@@ -36,9 +36,9 @@ function NavItem({ item, collapsed }) {
       <Icon size={18} className="flex-shrink-0" />
       {!collapsed && <span className="truncate">{label}</span>}
       {collapsed && (
-        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-midnight-800 text-white text-xs
+        <div className="absolute left-full ml-3 px-2.5 py-1.5 bg-slate-100 text-slate-800 text-xs
                         rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none
-                        whitespace-nowrap z-50 border border-white/10 transition-opacity duration-150">
+                        whitespace-nowrap z-50 border border-slate-200 transition-opacity duration-150">
           {label}
         </div>
       )}
@@ -64,7 +64,7 @@ export default function Sidebar({ open, setOpen }) {
         collapsed ? 'justify-center px-2' : 'px-5 gap-3'
       )}>
         <div className="w-9 h-9 rounded-xl bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow">
-          <Shield size={20} className="text-white" />
+          <Shield size={20} className="text-slate-800" />
         </div>
         {!collapsed && (
           <div>
@@ -115,7 +115,7 @@ export default function Sidebar({ open, setOpen }) {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-safe-500" />
             </span>
             <div>
-              <p className="text-xs font-medium text-slate-300">Models online</p>
+              <p className="text-xs font-medium text-slate-600">Models online</p>
               <p className="text-xs text-slate-500">XGBoost v1 active</p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function Sidebar({ open, setOpen }) {
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center justify-center h-10 border-t border-white/[0.06]
-                   text-slate-500 hover:text-white hover:bg-white/[0.04]
+                   text-slate-500 hover:text-slate-800 hover:bg-slate-100
                    transition-colors duration-150"
       >
         {collapsed

@@ -8,7 +8,7 @@ export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
 
   return (
-    <div className="flex min-h-screen bg-graphite-900 bg-mesh">
+    <div className="flex min-h-screen bg-slate-50 bg-mesh">
       {/* Sidebar */}
       <Sidebar open={sidebarOpen} setOpen={setSidebarOpen} />
 

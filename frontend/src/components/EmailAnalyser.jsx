@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { FileText, Upload, ShieldAlert, Cpu } from 'lucide-react'
 import { useScan } from '@/hooks/useScan'
 import AIExplanation from './AIExplanation'
@@ -8,6 +8,7 @@ export default function EmailAnalyser() {
   const [isHovering, setIsHovering] = useState(false)
   const { scanEmail, loading } = useScan()
   const [result, setResult] = useState(null)
+  const fileInputRef = useRef(null)
 
   const handleAnalyse = async () => {
     if (!content.trim()) return
@@ -15,27 +16,55 @@ export default function EmailAnalyser() {
     setResult(res)
   }
 
+  const handleFileDrop = (e) => {
+    e.preventDefault()
+    setIsHovering(false)
+    const file = e.dataTransfer?.files?.[0]
+    if (file) readFile(file)
+  }
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (file) readFile(file)
+  }
+
+  const readFile = (file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => setContent(e.target.result)
+    reader.readAsText(file)
+  }
+
   return (
     <div className="space-y-6">
       <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold text-white mb-2">Raw Email Header & Body Analysis</h2>
-        <p className="text-sm text-slate-400 mb-6">Paste the raw EML content or email headers to detect SPF/DKIM/DMARC failures and NLP-based phishing hooks.</p>
+        <h2 className="text-lg font-bold text-slate-800 mb-2">Raw Email Header & Body Analysis</h2>
+        <p className="text-sm text-slate-500 mb-6">Paste the raw EML content or email headers to detect SPF/DKIM/DMARC failures and NLP-based phishing hooks.</p>
         
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept=".eml,.txt" 
+          onChange={handleFileSelect} 
+        />
+
         <div 
-          className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200 text-center
-            ${isHovering ? 'border-brand-500 bg-brand-500/5' : 'border-white/[0.1] bg-white/[0.02]'}`}
+          className={`relative border-2 border-dashed rounded-2xl p-8 transition-all duration-200 text-center cursor-pointer
+            ${isHovering ? 'border-brand-500 bg-brand-50' : 'border-slate-300 bg-slate-50/50 hover:bg-slate-100'}`}
           onDragOver={(e) => { e.preventDefault(); setIsHovering(true) }}
           onDragLeave={() => setIsHovering(false)}
-          onDrop={(e) => { e.preventDefault(); setIsHovering(false) }}
+          onDrop={handleFileDrop}
+          onClick={() => fileInputRef.current?.click()}
         >
-          <div className="w-12 h-12 rounded-full bg-midnight-800 flex items-center justify-center mx-auto mb-4 border border-white/[0.05] shadow-inner text-slate-400">
+          <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm text-brand-600">
             <Upload size={20} />
           </div>
-          <p className="text-sm text-slate-300 mb-1">Drag and drop .eml file here</p>
+          <p className="text-sm font-semibold text-slate-700 mb-1">Click to upload or drag and drop .eml file here</p>
           <p className="text-xs text-slate-500 mb-6">or paste raw content below</p>
 
           <textarea
             value={content}
+            onClick={(e) => e.stopPropagation()}
             onChange={(e) => setContent(e.target.value)}
             className="textarea-field min-h-[200px]"
             placeholder="Return-Path: <spoofed@lloydsbanks.com>&#10;Received: from mail.attacker.net...&#10;&#10;Dear Customer,&#10;Your account has been restricted..."
@@ -52,16 +81,16 @@ export default function EmailAnalyser() {
 
       {result && (
         <div className="animate-fade-in space-y-6">
-          <div className="glass-card flex p-6 gap-6 items-center">
+          <div className="glass-card flex flex-col md:flex-row p-6 gap-6 md:items-center">
              <div className="flex-1">
-               <h3 className="text-2xl font-bold text-white mb-1">
+               <h3 className="text-2xl font-extrabold text-slate-800 mb-1">
                  {result.overall_label === 'phishing' ? 'Phishing Detected' : result.overall_label === 'suspicious' ? 'Suspicious Email' : 'Safe Email'}
                </h3>
-               <p className="text-sm text-slate-400">Combined NLP & Embedded URL Threat Check</p>
+               <p className="text-sm font-medium text-slate-500">Combined NLP & Embedded URL Threat Check</p>
              </div>
-             <div className="flex flex-col items-end">
-               <span className="text-4xl font-black text-brand-400">{result.overall_score_pct}%</span>
-               <span className="text-xs text-slate-500 font-mono tracking-wider uppercase">Threat Level</span>
+             <div className="flex flex-col md:items-end bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+               <span className="text-4xl font-black text-brand-600">{result.overall_score_pct}%</span>
+               <span className="text-xs text-slate-500 font-bold tracking-wider uppercase mt-1">Threat Level</span>
              </div>
           </div>
           <AIExplanation explanation={result.explanation} loading={loading} />

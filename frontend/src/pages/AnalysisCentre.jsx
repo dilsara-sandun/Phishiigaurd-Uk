@@ -15,27 +15,27 @@ export default function AnalysisCentre() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-graphite-800 border border-white/[0.08] p-1 rounded-xl w-fit">
+      <div className="flex bg-slate-200/50 border border-slate-200 p-1 rounded-xl w-fit shadow-inner">
         <button
           onClick={() => setActiveTab('url')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'url' ? 'bg-white/[0.08] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+            activeTab === 'url' ? 'bg-white text-brand-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
           }`}
         >
           URL Scanner
         </button>
         <button
           onClick={() => setActiveTab('email')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'email' ? 'bg-white/[0.08] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+            activeTab === 'email' ? 'bg-white text-brand-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
           }`}
         >
           Email Analyser
         </button>
         <button
           onClick={() => setActiveTab('dns')}
-          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all border-l border-transparent ${
-            activeTab === 'dns' ? 'bg-white/[0.08] text-white shadow-sm' : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+          className={`px-4 py-2 text-sm font-bold rounded-lg transition-all border-l border-transparent ${
+            activeTab === 'dns' ? 'bg-white text-brand-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
           }`}
         >
           Domain / DNS

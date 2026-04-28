@@ -13,9 +13,9 @@ export default function AIExplanation({ explanation, loading }) {
           <div className="h-4 bg-white/[0.08] rounded w-32" />
         </div>
         <div className="space-y-2">
-          <div className="h-3 bg-white/[0.06] rounded w-full" />
-          <div className="h-3 bg-white/[0.06] rounded w-5/6" />
-          <div className="h-3 bg-white/[0.06] rounded w-4/6" />
+          <div className="h-3 bg-slate-100 rounded w-full" />
+          <div className="h-3 bg-slate-100 rounded w-5/6" />
+          <div className="h-3 bg-slate-100 rounded w-4/6" />
         </div>
       </div>
     )
@@ -31,28 +31,28 @@ export default function AIExplanation({ explanation, loading }) {
     <div className="glass-card overflow-hidden">
       <div className="bg-gradient-to-r from-brand-600/20 to-transparent p-4 border-b border-white/[0.06] flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center shadow-glow">
-          <Sparkles size={16} className="text-white" />
+          <Sparkles size={16} className="text-slate-800" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-white">AI Threat Analysis</h3>
+          <h3 className="text-sm font-semibold text-slate-800">AI Threat Analysis</h3>
           <p className="text-xs text-brand-200">Powered by local Phi-3 engine</p>
         </div>
       </div>
 
-      <div className="p-5 text-sm text-slate-300 leading-relaxed font-sans space-y-4">
+      <div className="p-5 text-sm text-slate-600 leading-relaxed font-sans space-y-4">
         {formattedSections.map((section, idx) => {
           if (section.trim().startsWith('-')) {
              const listItems = section.split('\n').map(l => l.replace(/^- /, '').trim()).filter(Boolean)
              return (
-               <ul key={idx} className="list-disc list-outside ml-4 space-y-1.5 text-slate-300">
+               <ul key={idx} className="list-disc list-outside ml-4 space-y-1.5 text-slate-600">
                  {listItems.map((item, i) => (
-                    <li key={i}>{item.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')}</li>
+                    <li key={i}>{item.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-800 font-semibold">$1</strong>')}</li>
                  ))}
                </ul>
              )
           }
           
-          let parsedText = section.replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+          let parsedText = section.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-800 font-semibold">$1</strong>')
           
           if (section.toLowerCase().includes('recommendation') || section.toLowerCase().includes('action')) {
              return (

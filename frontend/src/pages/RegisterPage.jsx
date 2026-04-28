@@ -54,12 +54,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-graphite-900 text-slate-300 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-600 relative overflow-hidden font-sans">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Back link */}
-      <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white font-medium transition-colors">
+      <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-slate-800 font-medium transition-colors">
         <ArrowRight size={16} className="rotate-180" /> Back to Home
       </Link>
 
@@ -67,30 +67,30 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-[0_0_20px_rgba(6,182,212,0.4)] mb-6">
-            <Shield size={28} className="text-white" />
+            <Shield size={28} className="text-slate-800" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">Create Account</h1>
-          <p className="text-slate-400 text-base">Join PhishGuard UK and start detecting phishing threats.</p>
+          <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-2">Create Account</h1>
+          <p className="text-slate-500 text-base">Join PhishGuard UK and start detecting phishing threats.</p>
         </div>
 
         {/* Accepted email info banner */}
         <div className="flex items-start gap-3 bg-brand-500/10 border border-brand-500/20 rounded-xl px-4 py-3 mb-6">
           <Info size={16} className="text-brand-400 mt-0.5 shrink-0" />
-          <p className="text-xs text-slate-400 leading-relaxed">
+          <p className="text-xs text-slate-500 leading-relaxed">
             Any valid email is accepted —{' '}
-            <span className="text-white font-medium">Gmail, Outlook, Yahoo</span>,
-            university (e.g. <span className="text-white font-medium">@wlv.ac.uk</span>),
+            <span className="text-slate-800 font-medium">Gmail, Outlook, Yahoo</span>,
+            university (e.g. <span className="text-slate-800 font-medium">@wlv.ac.uk</span>),
             or a corporate / banking domain.
             No institutional address required.
           </p>
         </div>
 
-        <div className="bg-midnight-900/80 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+        <div className="bg-white/80 border border-slate-200 rounded-2xl p-8 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Full Name</label>
+              <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Full Name</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -100,14 +100,14 @@ export default function RegisterPage() {
                   placeholder="e.g. Sandun Perera"
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white text-base focus:border-brand-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-4 text-slate-800 text-base focus:border-brand-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+              <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -117,14 +117,14 @@ export default function RegisterPage() {
                   placeholder="you@gmail.com  or  you@yourbank.co.uk"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white text-base focus:border-brand-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-4 text-slate-800 text-base focus:border-brand-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Password</label>
+              <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -136,10 +136,10 @@ export default function RegisterPage() {
                   placeholder="Min. 8 characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-12 text-white text-base font-mono focus:border-brand-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-12 text-slate-800 text-base font-mono focus:border-brand-500 focus:outline-none transition-colors"
                 />
                 <button type="button" onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600">
                   {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -163,7 +163,7 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Confirm Password</label>
+              <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Confirm Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -175,14 +175,14 @@ export default function RegisterPage() {
                   placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChange={e => setConfirm(e.target.value)}
-                  className={`w-full bg-graphite-900 border rounded-xl py-4 pl-12 pr-12 text-white text-base font-mono focus:outline-none transition-colors ${
+                  className={`w-full bg-slate-50 border rounded-xl py-4 pl-12 pr-12 text-slate-800 text-base font-mono focus:outline-none transition-colors ${
                     confirmPassword && confirmPassword !== password
                       ? 'border-red-500 focus:border-red-400'
-                      : 'border-white/10 focus:border-brand-500'
+                      : 'border-slate-200 focus:border-brand-500'
                   }`}
                 />
                 <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600">
                   {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
@@ -212,7 +212,7 @@ export default function RegisterPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center">
-            <p className="text-base text-slate-400">
+            <p className="text-base text-slate-500">
               Already have an account?{' '}
               <Link to="/login" className="text-white font-bold hover:text-brand-400 transition-colors">Sign in</Link>
             </p>
@@ -222,14 +222,14 @@ export default function RegisterPage() {
 
       {/* OTP Verification Modal */}
       {showOtp && (
-        <div className="fixed inset-0 z-50 bg-graphite-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-midnight-900 border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
+        <div className="fixed inset-0 z-50 bg-slate-50/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md w-full text-center">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-500/10 mb-4">
               <Shield size={24} className="text-brand-500" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Verify Your Email</h3>
-            <p className="text-sm text-slate-400 mb-2">A 6-digit code has been sent to:</p>
-            <p className="text-white font-semibold mb-4 break-all">{email}</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Verify Your Email</h3>
+            <p className="text-sm text-slate-500 mb-2">A 6-digit code has been sent to:</p>
+            <p className="text-slate-800 font-semibold mb-4 break-all">{email}</p>
             <p className="text-xs text-slate-500 mb-6">
               Check your inbox and spam folder. The code expires in 10 minutes.
             </p>
@@ -244,7 +244,7 @@ export default function RegisterPage() {
                 placeholder="0 0 0 0 0 0"
                 value={otp}
                 onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 px-4 text-white text-2xl text-center font-mono font-bold tracking-[0.5em] focus:border-brand-500 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-4 text-slate-800 text-2xl text-center font-mono font-bold tracking-[0.5em] focus:border-brand-500 focus:outline-none"
               />
               <button
                 type="submit"
@@ -256,7 +256,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowOtp(false)}
-                className="text-xs font-medium text-slate-500 hover:text-white transition-colors"
+                className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
               >
                 ← Back to registration form
               </button>

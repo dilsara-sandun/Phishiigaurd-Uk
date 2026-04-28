@@ -35,12 +35,12 @@ export default function Navbar({ onToggleSidebar }) {
 
   return (
     <header className="sticky top-0 z-30 h-16 flex items-center px-6
-                        bg-graphite-800/80 backdrop-blur-md border-b border-white/[0.06]">
+                        bg-white/80 backdrop-blur-md border-b border-white/[0.06]">
       {/* Left: toggle + breadcrumb */}
       <div className="flex items-center gap-4 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+          className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
         >
           <Menu size={18} />
         </button>
@@ -49,7 +49,7 @@ export default function Navbar({ onToggleSidebar }) {
           <Shield size={14} className="text-brand-400 flex-shrink-0" />
           <span className="text-slate-500">/</span>
           {crumbs.map((c, i) => (
-            <span key={c} className={clsx('font-medium', i === crumbs.length - 1 ? 'text-white' : 'text-slate-400')}>
+            <span key={c} className={clsx('font-medium', i === crumbs.length - 1 ? 'text-slate-800' : 'text-slate-500')}>
               {c}
             </span>
           ))}
@@ -61,7 +61,7 @@ export default function Navbar({ onToggleSidebar }) {
         <div className="relative">
           <button
             onClick={() => { setAlertsOpen((o) => !o); setUserOpen(false) }}
-            className="relative p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+            className="relative p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           >
             <Bell size={18} />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger-500 rounded-full" />
@@ -71,11 +71,11 @@ export default function Navbar({ onToggleSidebar }) {
             <div className="absolute right-0 top-full mt-2 w-80 glass-card border border-white/[0.08]
                             shadow-card-lg rounded-2xl overflow-hidden animate-slide-in">
               <div className="px-4 py-3 border-b border-white/[0.06]">
-                <p className="text-sm font-semibold text-white">Notifications</p>
+                <p className="text-sm font-semibold text-slate-800">Notifications</p>
               </div>
               {ALERTS.map((a) => (
                 <div key={a.id} className="px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
-                  <p className="text-xs text-slate-300 leading-relaxed">{a.text}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{a.text}</p>
                   <p className="text-xs text-slate-500 mt-1">{a.time}</p>
                 </div>
               ))}
@@ -97,22 +97,22 @@ export default function Navbar({ onToggleSidebar }) {
                        transition-colors duration-150"
           >
             <div className="w-7 h-7 rounded-lg bg-gradient-brand flex items-center justify-center flex-shrink-0">
-              <User size={14} className="text-white" />
+              <User size={14} className="text-slate-800" />
             </div>
             <div className="text-left hidden sm:block">
-              <p className="text-xs font-semibold text-white leading-tight">
+              <p className="text-xs font-semibold text-slate-800 leading-tight">
                 {user?.email?.split('@')[0] || 'Analyst'}
               </p>
               <p className="text-xs text-slate-500 capitalize leading-tight">{user?.role || 'user'}</p>
             </div>
-            <ChevronDown size={14} className="text-slate-400" />
+            <ChevronDown size={14} className="text-slate-500" />
           </button>
 
           {userOpen && (
             <div className="absolute right-0 top-full mt-2 w-52 glass-card border border-white/[0.08]
                             shadow-card-lg rounded-2xl overflow-hidden animate-slide-in">
               <div className="px-4 py-3 border-b border-white/[0.06]">
-                <p className="text-xs font-semibold text-white truncate">{user?.email}</p>
+                <p className="text-xs font-semibold text-slate-800 truncate">{user?.email}</p>
                 <p className="text-xs text-slate-500 mt-0.5 capitalize">{user?.role} account</p>
               </div>
               <button

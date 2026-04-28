@@ -40,8 +40,8 @@ export default function URLScanner() {
     <div className="space-y-6">
       {/* Search Input Area */}
       <div className="glass-card p-6">
-        <h2 className="text-lg font-semibold text-white mb-2">Analyse URL</h2>
-        <p className="text-sm text-slate-400 mb-6">Enter a banking or suspicious link to scan with our ML engine.</p>
+        <h2 className="text-lg font-semibold text-slate-800 mb-2">Analyse URL</h2>
+        <p className="text-sm text-slate-500 mb-6">Enter a banking or suspicious link to scan with our ML engine.</p>
         
         <form onSubmit={handleScan} className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -53,9 +53,9 @@ export default function URLScanner() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="e.g. https://lloyds-verify.top/auth"
-              className="w-full bg-graphite-900 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
+              className="w-full bg-slate-50 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
                          text-slate-200 placeholder-slate-500 font-mono text-sm
-                         focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 focus:bg-graphite-800 transition-all"
+                         focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 focus:bg-white transition-all"
               disabled={loading}
             />
           </div>
@@ -83,16 +83,16 @@ export default function URLScanner() {
               <div className={`mx-auto w-16 h-16 rounded-full ${visuals.bg} flex items-center justify-center mb-4`}>
                 <visuals.icon size={32} className={visuals.color} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-1">{visuals.label}</h3>
-              <p className="text-sm text-slate-400 break-all">{result.url}</p>
+              <h3 className="text-2xl font-bold text-slate-800 mb-1">{visuals.label}</h3>
+              <p className="text-sm text-slate-500 break-all">{result.url}</p>
 
               <div className="divider my-6" />
 
               <div className="text-left space-y-4">
                 <div>
                   <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-slate-400 uppercase font-semibold">Threat Score</span>
-                    <span className="text-white font-mono">{Math.round(result.risk_score * 100)} / 100</span>
+                    <span className="text-slate-500 uppercase font-semibold">Threat Score</span>
+                    <span className="text-slate-800 font-mono">{Math.round(result.risk_score * 100)} / 100</span>
                   </div>
                   <div className="score-bar-track">
                     <div 
@@ -104,17 +104,17 @@ export default function URLScanner() {
 
                 <div className="flex flex-col gap-2 pt-2">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Detection Engine</span>
+                    <span className="text-slate-500">Detection Engine</span>
                     <span className="text-slate-200 font-medium">XGBoost v1</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Live Intel Match</span>
+                    <span className="text-slate-500">Live Intel Match</span>
                     <span className={result.intel_source ? 'text-danger-400 font-medium' : 'text-safe-400'}>
                       {result.intel_source || 'Clean'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Scan Duration</span>
+                    <span className="text-slate-500">Scan Duration</span>
                     <span className="text-slate-200 font-mono text-xs">{(Math.random() * 0.5 + 0.1).toFixed(2)}s</span>
                   </div>
                 </div>
@@ -127,7 +127,7 @@ export default function URLScanner() {
             
             {/* Red Flags / Features */}
             <div className="glass-card p-6">
-              <h3 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
+              <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
                 <Shield size={18} className="text-brand-400" />
                 Technical Indicators
               </h3>
@@ -143,10 +143,10 @@ export default function URLScanner() {
                     <div key={key} className={`p-3 rounded-xl border transition-colors ${
                       isRedFlag 
                         ? 'bg-danger-500/5 border-danger-500/20' 
-                        : 'bg-white/[0.02] border-white/[0.05]'
+                        : 'bg-slate-50 border-slate-200'
                     }`}>
                       <p className="text-xs text-slate-500 font-medium truncate mb-1" title={key}>{key}</p>
-                      <p className={`text-sm font-mono ${isRedFlag ? 'text-danger-400' : 'text-slate-300'}`}>
+                      <p className={`text-sm font-mono ${isRedFlag ? 'text-danger-400' : 'text-slate-600'}`}>
                         {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value}
                       </p>
                     </div>

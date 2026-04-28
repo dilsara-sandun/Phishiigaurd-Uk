@@ -74,7 +74,7 @@ export default function BlogPage() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-sm">
-              <Shield size={20} className="text-white" />
+              <Shield size={20} className="text-slate-800" />
             </div>
             <span className="text-slate-900 font-extrabold tracking-tight text-xl">PhishGuard UK</span>
           </div>
@@ -88,7 +88,7 @@ export default function BlogPage() {
           
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-slate-500 hover:text-slate-900 text-sm font-medium transition-colors">Sign In</Link>
-            <Link to="/register" className="px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold shadow-md transition-all">
+            <Link to="/register" className="px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-slate-800 text-sm font-bold shadow-md transition-all">
               Deploy Node
             </Link>
           </div>

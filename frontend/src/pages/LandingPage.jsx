@@ -5,30 +5,30 @@ import { Shield, Zap, Scan, Mail, Network, ArrowRight, BookOpen, ChevronRight } 
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-graphite-900 text-slate-300 font-sans selection:bg-brand-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-600 font-sans selection:bg-brand-500/30">
       
       {/* Sticky Top Navbar */}
-      <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-graphite-900/70 border-b border-white/5">
+      <nav className="sticky top-0 z-50 w-full backdrop-blur-xl bg-slate-50/70 border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-              <Shield size={20} className="text-white" />
+              <Shield size={20} className="text-slate-800" />
             </div>
-            <span className="text-white font-extrabold tracking-tight text-xl">PhishGuard UK</span>
+            <span className="text-slate-800 font-extrabold tracking-tight text-xl">PhishGuard UK</span>
           </div>
           
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/" className="text-white font-medium text-sm transition-colors">Home</Link>
-            <Link to="/platform" className="text-slate-400 hover:text-white font-medium text-sm transition-colors">Platform</Link>
-            <Link to="/platform" className="text-slate-400 hover:text-white font-medium text-sm transition-colors">AI Engine</Link>
-            <Link to="/platform" className="text-slate-400 hover:text-white font-medium text-sm transition-colors">API Docs</Link>
-            <Link to="/blog" className="text-slate-400 hover:text-white font-medium text-sm transition-colors">Blog</Link>
+            <Link to="/" className="text-slate-800 font-medium text-sm transition-colors">Home</Link>
+            <Link to="/platform" className="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors">Platform</Link>
+            <Link to="/platform" className="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors">AI Engine</Link>
+            <Link to="/platform" className="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors">API Docs</Link>
+            <Link to="/blog" className="text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors">Blog</Link>
             <Link to="/test-knowledge" className="text-brand-400 font-bold text-sm transition-colors border border-brand-500/30 px-3 py-1 rounded-full bg-brand-500/10 hover:bg-brand-500/20">Test Knowledge</Link>
           </div>
           
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-slate-300 hover:text-white text-sm font-medium transition-colors">Sign In</Link>
-            <Link to="/register" className="px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all">
+            <Link to="/login" className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors">Sign In</Link>
+            <Link to="/register" className="px-5 py-2.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-slate-800 text-sm font-bold shadow-[0_0_15px_rgba(6,182,212,0.3)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all">
               Deploy Node
             </Link>
           </div>
@@ -57,19 +57,19 @@ export default function LandingPage() {
           
           {/* Left Content */}
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-slate-200 mb-8 backdrop-blur-sm">
               <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
               <span className="text-brand-300 text-xs font-semibold tracking-wider uppercase">Enterprise Intelligence v2.4</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.05] mb-8">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-slate-800 tracking-tight leading-[1.05] mb-8">
               Detect phishing <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-300 to-brand-600 drop-shadow-[0_0_30px_rgba(6,182,212,0.4)]">
                 before users click.
               </span>
             </h1>
             
-            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-xl">
+            <p className="text-lg text-slate-500 leading-relaxed mb-10 max-w-xl">
               The ultimate AI-powered threat intelligence platform protecting UK financial institutions from zero-day phishing attacks. Analyze URLs, emails, and domains in milliseconds.
             </p>
             
@@ -77,7 +77,7 @@ export default function LandingPage() {
               <Link to="/register" className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white text-graphite-900 font-bold hover:bg-slate-100 transition-colors">
                 Start Analyzing <ArrowRight size={18} />
               </Link>
-              <Link to="/platform" className="px-6 py-3.5 rounded-xl border border-white/10 text-white font-semibold hover:bg-white/5 transition-colors">
+              <Link to="/platform" className="px-6 py-3.5 rounded-xl border border-slate-200 text-slate-800 font-semibold hover:bg-white/5 transition-colors">
                 View Architecture
               </Link>
             </div>
@@ -86,7 +86,7 @@ export default function LandingPage() {
           {/* Right Dashboard Visualization */}
           <div className="relative h-[600px] flex items-center justify-center scale-90 md:scale-100">
             {/* Main Dashboard Panel */}
-            <div className="relative w-full max-w-[500px] aspect-[4/3] bg-midnight-950/40 border border-white/10 rounded-3xl backdrop-blur-2xl p-8 shadow-2xl overflow-hidden group">
+            <div className="relative w-full max-w-[500px] aspect-[4/3] bg-midnight-950/40 border border-slate-200 rounded-3xl backdrop-blur-2xl p-8 shadow-2xl overflow-hidden group">
               {/* Animated scanning line */}
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-500 to-transparent animate-[scan_3s_ease-in-out_infinite] opacity-50" />
               
@@ -116,7 +116,7 @@ export default function LandingPage() {
                 </div>
                 <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
                   <div className="text-[10px] text-slate-500 font-bold uppercase mb-2">Confidence</div>
-                  <div className="text-3xl font-black text-white tracking-tighter">99.8%</div>
+                  <div className="text-3xl font-black text-slate-800 tracking-tighter">99.8%</div>
                   <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 w-[99.8%]" />
                   </div>
@@ -133,7 +133,7 @@ export default function LandingPage() {
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.05] transition-colors">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className={`w-2 h-2 rounded-full ${item.status === 'LEGIT' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                      <div className="text-[11px] font-mono text-slate-400 truncate">{item.url}</div>
+                      <div className="text-[11px] font-mono text-slate-500 truncate">{item.url}</div>
                     </div>
                     <div className={`${item.color} text-[9px] font-black tracking-widest px-2 py-0.5 rounded ${item.bg}`}>
                       {item.status}
@@ -148,12 +148,12 @@ export default function LandingPage() {
             </div>
 
             {/* Floating Stats Cards */}
-            <div className="absolute -top-10 -right-6 bg-midnight-900 border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_6s_ease-in-out_infinite]">
+            <div className="absolute -top-10 -right-6 bg-white border border-slate-200 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_6s_ease-in-out_infinite]">
               <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">Daily Scans</div>
-              <div className="text-xl font-bold text-white">2.4M+</div>
+              <div className="text-xl font-bold text-slate-800">2.4M+</div>
             </div>
             
-            <div className="absolute -bottom-6 -left-6 bg-midnight-900 border border-white/10 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_7s_ease-in-out_infinite_1s]">
+            <div className="absolute -bottom-6 -left-6 bg-white border border-slate-200 p-4 rounded-2xl backdrop-blur-xl shadow-2xl animate-[float_7s_ease-in-out_infinite_1s]">
               <div className="flex items-center gap-2 mb-1">
                 <Shield size={12} className="text-brand-400" />
                 <span className="text-[10px] font-bold text-slate-500 uppercase">Blocked</span>
@@ -171,33 +171,33 @@ export default function LandingPage() {
       {/* 3 Premium Bento Cards */}
       <section className="py-24 max-w-7xl mx-auto px-6 border-t border-white/5 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-4">Precision Analysis at Scale</h2>
-          <p className="text-slate-400 max-w-2xl mx-auto">Detect sophisticated phishing attacks across multiple vectors using advanced machine learning models trained on global threat feeds.</p>
+          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-4">Precision Analysis at Scale</h2>
+          <p className="text-slate-500 max-w-2xl mx-auto">Detect sophisticated phishing attacks across multiple vectors using advanced machine learning models trained on global threat feeds.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {/* Card 1 */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-white/[0.04] transition-colors group relative overflow-hidden">
+          <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-slate-100 transition-colors group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
               <Scan size={120} className="text-brand-500" />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-midnight-800 border border-white/10 flex items-center justify-center mb-6 shadow-lg relative z-10">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-6 shadow-lg relative z-10">
               <Scan size={24} className="text-brand-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3 relative z-10">Deep URL Scanning</h3>
-            <p className="text-slate-400 text-sm leading-relaxed relative z-10">Extracts 27 structural and lexical features from target URLs in milliseconds, processed by our proprietary XGBoost classifier.</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Deep URL Scanning</h3>
+            <p className="text-slate-500 text-sm leading-relaxed relative z-10">Extracts 27 structural and lexical features from target URLs in milliseconds, processed by our proprietary XGBoost classifier.</p>
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-white/[0.04] transition-colors group relative overflow-hidden">
+          <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-slate-100 transition-colors group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
               <Mail size={120} className="text-brand-500" />
             </div>
-            <div className="w-12 h-12 rounded-xl bg-midnight-800 border border-white/10 flex items-center justify-center mb-6 shadow-lg relative z-10">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-6 shadow-lg relative z-10">
               <Mail size={24} className="text-brand-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3 relative z-10">Semantic Email Analysis</h3>
-            <p className="text-slate-400 text-sm leading-relaxed relative z-10">Evaluates email payload intent using NLP and TF-IDF vectorization to identify urgent language, suspicious links, and spoofing attempts.</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Semantic Email Analysis</h3>
+            <p className="text-slate-500 text-sm leading-relaxed relative z-10">Evaluates email payload intent using NLP and TF-IDF vectorization to identify urgent language, suspicious links, and spoofing attempts.</p>
           </div>
 
           {/* Card 3 */}
@@ -208,22 +208,22 @@ export default function LandingPage() {
             <div className="w-12 h-12 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center mb-6 shadow-lg relative z-10">
               <Zap size={24} className="text-brand-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3 relative z-10">Explainable AI (XAI)</h3>
-            <p className="text-slate-300 text-sm leading-relaxed relative z-10">Every detection includes SHAP-value breakdowns, allowing security analysts to see exactly which features triggered the phishing verdict.</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Explainable AI (XAI)</h3>
+            <p className="text-slate-600 text-sm leading-relaxed relative z-10">Every detection includes SHAP-value breakdowns, allowing security analysts to see exactly which features triggered the phishing verdict.</p>
           </div>
         </div>
       </section>
 
       {/* Asymmetric Full-Width Section Teasers */}
-      <section className="border-t border-white/5 bg-midnight-900 py-24">
+      <section className="border-t border-white/5 bg-white py-24">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-3 gap-6">
             
             {/* Big Feature Block */}
-            <div className="lg:col-span-2 bg-graphite-900 border border-white/5 rounded-3xl p-10 flex flex-col justify-between">
+            <div className="lg:col-span-2 bg-slate-50 border border-white/5 rounded-3xl p-10 flex flex-col justify-between">
               <div>
-                <h3 className="text-2xl font-bold text-white mb-4">Platform Architecture</h3>
-                <p className="text-slate-400 max-w-lg mb-8">Built on React 18 and FastAPI, heavily optimized with asynchronous processing and PostgreSQL functional indexing to support massive ingestion loads without breaking a sweat.</p>
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">Platform Architecture</h3>
+                <p className="text-slate-500 max-w-lg mb-8">Built on React 18 and FastAPI, heavily optimized with asynchronous processing and PostgreSQL functional indexing to support massive ingestion loads without breaking a sweat.</p>
               </div>
               <Link to="/platform" className="inline-flex items-center gap-2 text-brand-400 font-semibold hover:text-brand-300 transition-colors w-fit">
                 Explore the Tech Stack <ArrowRight size={16} />
@@ -231,15 +231,15 @@ export default function LandingPage() {
             </div>
             
             <div className="flex flex-col gap-6">
-              <div className="bg-graphite-900 border border-white/5 rounded-3xl p-8 flex-1">
-                <h3 className="text-lg font-bold text-white mb-2">API Documentation</h3>
-                <p className="text-slate-400 text-sm mb-6">REST endpoints ready for enterprise integration.</p>
-                <Link to="/platform" className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">View Docs &rarr;</Link>
+              <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 flex-1">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">API Documentation</h3>
+                <p className="text-slate-500 text-sm mb-6">REST endpoints ready for enterprise integration.</p>
+                <Link to="/platform" className="text-sm font-semibold text-slate-800 hover:text-brand-400 transition-colors">View Docs &rarr;</Link>
               </div>
-              <div className="bg-graphite-900 border border-white/5 rounded-3xl p-8 flex-1">
-                <h3 className="text-lg font-bold text-white mb-2">About PhishGuard UK</h3>
-                <p className="text-slate-400 text-sm mb-6">Academic rigor meets production-grade software.</p>
-                <Link to="/platform" className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">Read Mission &rarr;</Link>
+              <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 flex-1">
+                <h3 className="text-lg font-bold text-slate-800 mb-2">About PhishGuard UK</h3>
+                <p className="text-slate-500 text-sm mb-6">Academic rigor meets production-grade software.</p>
+                <Link to="/platform" className="text-sm font-semibold text-slate-800 hover:text-brand-400 transition-colors">Read Mission &rarr;</Link>
               </div>
             </div>
 
@@ -248,10 +248,10 @@ export default function LandingPage() {
       </section>
 
       {/* Test Your Knowledge CTA */}
-      <section className="border-t border-white/5 bg-graphite-900 py-24 relative overflow-hidden">
+      <section className="border-t border-white/5 bg-slate-50 py-24 relative overflow-hidden">
         <div className="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-emerald-500/5 to-transparent pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-midnight-900 border border-emerald-500/20 rounded-3xl p-10 md:p-16 relative overflow-hidden shadow-2xl">
+          <div className="bg-white border border-emerald-500/20 rounded-3xl p-10 md:p-16 relative overflow-hidden shadow-2xl">
             <div className="absolute top-0 right-0 p-8 opacity-5">
               <Shield size={200} />
             </div>
@@ -262,8 +262,8 @@ export default function LandingPage() {
                 <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wider">Interactive Simulation</span>
               </div>
               
-              <h2 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-6">Can you spot a fake?</h2>
-              <p className="text-lg text-slate-400 mb-8 leading-relaxed">
+              <h2 className="text-3xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-6">Can you spot a fake?</h2>
+              <p className="text-lg text-slate-500 mb-8 leading-relaxed">
                 Cybercriminals are getting smarter. Put your skills to the test with our interactive phishing simulation. We'll show you URLs from major UK Banks, and you have to identify the real ones.
               </p>
               
@@ -285,15 +285,15 @@ export default function LandingPage() {
             <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Enterprise Access</span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">Ready to secure your institution?</h2>
-          <p className="text-lg text-slate-400 mb-10 max-w-2xl mx-auto">See how PhishGuard UK can integrate with your existing SOC tools and provide explainable AI threat detection in real-time.</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-6">Ready to secure your institution?</h2>
+          <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">See how PhishGuard UK can integrate with your existing SOC tools and provide explainable AI threat detection in real-time.</p>
           
           <form className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto" onSubmit={(e) => { e.preventDefault(); alert('Demo request submitted successfully!'); }}>
             <input 
               type="email" 
               required 
               placeholder="Enter your corporate email" 
-              className="flex-1 bg-graphite-800 border border-white/10 rounded-xl px-6 py-4 text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none transition-colors"
+              className="flex-1 bg-white border border-slate-200 rounded-xl px-6 py-4 text-slate-800 placeholder-slate-500 focus:border-brand-500 focus:outline-none transition-colors"
             />
             <button type="submit" className="px-8 py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold whitespace-nowrap shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all">
               Request Demo
@@ -304,7 +304,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-12 text-center text-slate-500 text-sm bg-graphite-900">
+      <footer className="border-t border-white/5 py-12 text-center text-slate-500 text-sm bg-slate-50">
         <p>&copy; {new Date().getFullYear()} PhishGuard UK. Final Year Project.</p>
       </footer>
     </div>

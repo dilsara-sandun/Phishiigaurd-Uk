@@ -11,7 +11,7 @@ export default function RiskDonut({ data }) {
   if (!data || data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm">
-        <div className="w-16 h-16 rounded-full border-4 border-white/[0.05] border-t-white/[0.1] animate-spin mb-3"></div>
+        <div className="w-16 h-16 rounded-full border-4 border-slate-200 border-t-white/[0.1] animate-spin mb-3"></div>
         Awaiting scan data...
       </div>
     )
@@ -53,8 +53,8 @@ export default function RiskDonut({ data }) {
       </div>
 
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
-        <span className="text-3xl font-bold text-white tracking-tight">{total}</span>
-        <span className="text-xs text-slate-400 font-medium tracking-wide">TOTAL SCANS</span>
+        <span className="text-3xl font-bold text-slate-800 tracking-tight">{total}</span>
+        <span className="text-xs text-slate-500 font-medium tracking-wide">TOTAL SCANS</span>
       </div>
 
       <div className="flex justify-center gap-6 mt-4">
@@ -64,7 +64,7 @@ export default function RiskDonut({ data }) {
               className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
               style={{ backgroundColor: COLORS[item.name.toLowerCase()], boxShadow: `0 0 10px ${COLORS[item.name.toLowerCase()]}80` }} 
             />
-            <span className="text-xs font-medium text-slate-300 capitalize">{item.name}</span>
+            <span className="text-xs font-medium text-slate-600 capitalize">{item.name}</span>
           </div>
         ))}
       </div>

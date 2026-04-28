@@ -17,8 +17,37 @@
   *::-webkit-scrollbar-thumb { background: #1e3a6e; border-radius: 99px; }
 
   body {
-    @apply bg-graphite-900 text-slate-100 font-sans;
+    @apply bg-slate-50 text-slate-800 font-sans relative min-h-screen overflow-x-hidden;
     font-feature-settings: 'ss01','ss02','cv01','cv02';
+  }
+
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: -10;
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: floatBlob 15s ease-in-out infinite alternate;
+  }
+  
+  body::before {
+    top: -10%; left: -10%;
+    width: 500px; height: 500px;
+    background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+  }
+
+  body::after {
+    bottom: -10%; right: -10%;
+    width: 600px; height: 600px;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    animation-delay: -5s;
+  }
+
+  @keyframes floatBlob {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(100px, 50px) scale(1.1); }
+    100% { transform: translate(-50px, 150px) scale(0.9); }
   }
 
   input, textarea, select {
@@ -32,21 +61,21 @@
 
 @layer components {
   .glass-card {
-    @apply bg-midnight-900/60 backdrop-blur-sm border border-white/[0.06] rounded-2xl;
+    @apply bg-white/80 backdrop-blur-xl border border-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)];
   }
 
   .glass-card-light {
-    @apply bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] rounded-2xl;
+    @apply bg-white/60 backdrop-blur-lg border border-white/80 rounded-2xl shadow-sm;
   }
 
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-           text-slate-400 hover:text-white hover:bg-white/[0.06]
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold
+           text-slate-600 hover:text-brand-600 hover:bg-white
            transition-all duration-150 cursor-pointer;
   }
 
   .nav-item.active {
-    @apply text-white bg-brand-600/20 border border-brand-500/30;
+    @apply text-brand-700 bg-white shadow-sm border border-brand-100;
   }
 
   .btn-primary {
@@ -57,33 +86,33 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium
-           bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.08]
-           text-slate-200 transition-all duration-150 active:scale-[.98];
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
+           bg-white hover:bg-slate-50 border border-slate-200 shadow-sm
+           text-slate-700 transition-all duration-150 active:scale-[.98];
   }
 
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold
+    @apply inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
            bg-danger-600 hover:bg-danger-500/90 text-white
-           transition-all duration-150 active:scale-[.98];
+           transition-all duration-150 active:scale-[.98] shadow-md shadow-danger-500/20;
   }
 
   .input-field {
-    @apply w-full bg-graphite-800 border border-white/[0.10] rounded-xl px-4 py-3
-           text-slate-100 placeholder-slate-500 text-sm
-           focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20
+    @apply w-full bg-white border border-slate-200 rounded-xl px-4 py-3
+           text-slate-800 placeholder-slate-400 text-sm shadow-sm
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20
            transition-all duration-150;
   }
 
   .textarea-field {
-    @apply w-full bg-graphite-800 border border-white/[0.10] rounded-xl px-4 py-3
-           text-slate-100 placeholder-slate-500 text-sm font-mono
-           focus:border-brand-500/60 focus:ring-2 focus:ring-brand-500/20
+    @apply w-full bg-white border border-slate-200 rounded-xl px-4 py-3
+           text-slate-800 placeholder-slate-400 text-sm font-mono shadow-sm
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20
            transition-all duration-150 resize-none;
   }
 
   .label {
-    @apply block text-sm font-medium text-slate-300 mb-1.5;
+    @apply block text-sm font-bold text-slate-700 mb-1.5;
   }
 
   .badge-phishing {
@@ -116,27 +145,27 @@
   }
 
   .divider {
-    @apply border-t border-white/[0.06];
+    @apply border-t border-slate-200;
   }
 
   .page-title {
-    @apply text-2xl font-bold text-white tracking-tight;
+    @apply text-2xl font-extrabold text-slate-800 tracking-tight;
   }
 
   .page-sub {
-    @apply text-sm text-slate-400 mt-0.5;
+    @apply text-sm font-medium text-slate-500 mt-0.5;
   }
 
   .section-title {
-    @apply text-base font-semibold text-slate-200 mb-1;
+    @apply text-base font-bold text-slate-800 mb-1;
   }
 
   .table-th {
-    @apply px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider;
+    @apply px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider;
   }
 
   .table-td {
-    @apply px-4 py-3.5 text-sm text-slate-300;
+    @apply px-4 py-3.5 text-sm font-medium text-slate-700;
   }
 }
 

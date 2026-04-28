@@ -77,28 +77,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-graphite-900 text-slate-300 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-600 relative overflow-hidden font-sans">
       {/* Background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-[120px] pointer-events-none" />
       
       {/* Back to Home Link */}
-      <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-slate-400 hover:text-white font-medium transition-colors">
+      <Link to="/" className="absolute top-8 left-8 flex items-center gap-2 text-slate-500 hover:text-slate-800 font-medium transition-colors">
         <ArrowRight size={16} className="rotate-180" /> Back to Platform
       </Link>
 
       <div className="w-full max-w-md relative z-10 px-6">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 shadow-[0_0_20px_rgba(6,182,212,0.4)] mb-6">
-            <Shield size={28} className="text-white" />
+            <Shield size={28} className="text-slate-800" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white tracking-tight mb-3">Sign In</h1>
-          <p className="text-slate-400 text-lg">Enter your credentials to access PhishGuard UK.</p>
+          <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight mb-3">Sign In</h1>
+          <p className="text-slate-500 text-lg">Enter your credentials to access PhishGuard UK.</p>
         </div>
 
-        <div className="bg-midnight-900/80 border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+        <div className="bg-white/80 border border-slate-200 rounded-2xl p-8 backdrop-blur-xl shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+              <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Email Address</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -107,14 +107,14 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white text-base focus:border-brand-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-4 text-slate-800 text-base focus:border-brand-500 focus:outline-none transition-colors"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+                <label className="block text-sm font-semibold text-slate-500 uppercase tracking-wider">Password</label>
                 <button type="button" onClick={() => setShowForgot(true)} className="text-sm font-medium text-brand-400 hover:text-brand-300">Recover Password</button>
               </div>
               <div className="relative">
@@ -125,12 +125,12 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-4 pl-12 pr-12 text-white text-base font-mono focus:border-brand-500 focus:outline-none transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-12 text-slate-800 text-base font-mono focus:border-brand-500 focus:outline-none transition-colors"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600"
                 >
                   {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -151,7 +151,7 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center">
-            <p className="text-base text-slate-400">
+            <p className="text-base text-slate-500">
               Not registered? <Link to="/register" className="text-white font-bold hover:text-brand-400 transition-colors">Create Account</Link>
             </p>
           </div>
@@ -160,13 +160,13 @@ export default function LoginPage() {
 
       {/* Forgot Password Modal */}
       {showForgot && (
-        <div className="fixed inset-0 z-50 bg-graphite-900/90 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-midnight-900 border border-white/10 rounded-2xl p-8 max-w-md w-full relative">
-            <button onClick={() => setShowForgot(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white">
+        <div className="fixed inset-0 z-50 bg-slate-50/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 max-w-md w-full relative">
+            <button onClick={() => setShowForgot(false)} className="absolute top-4 right-4 text-slate-500 hover:text-slate-800">
               <X size={20} />
             </button>
-            <h3 className="text-xl font-bold text-white mb-2">Recover Password</h3>
-            <p className="text-sm text-slate-400 mb-6">Enter your email address to receive recovery instructions.</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Recover Password</h3>
+            <p className="text-sm text-slate-500 mb-6">Enter your email address to receive recovery instructions.</p>
             
             <form onSubmit={handleForgotSubmit} className="flex flex-col gap-4">
               <div className="relative">
@@ -177,7 +177,7 @@ export default function LoginPage() {
                   placeholder="you@example.com"
                   value={forgotEmail}
                   onChange={e => setForgotEmail(e.target.value)}
-                  className="w-full bg-graphite-900 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-white text-sm focus:border-brand-500 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-sm focus:border-brand-500 focus:outline-none"
                 />
               </div>
               <button
@@ -194,9 +194,9 @@ export default function LoginPage() {
 
       {/* 2FA Verification Modal */}
       {show2FA && (
-        <div className="fixed inset-0 z-50 bg-graphite-900/95 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-midnight-900 border border-brand-500/30 rounded-2xl p-8 max-w-md w-full relative shadow-[0_0_50px_rgba(6,182,212,0.15)]">
-            <button onClick={() => setShow2FA(false)} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+        <div className="fixed inset-0 z-50 bg-slate-50/95 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white border border-brand-500/30 rounded-2xl p-8 max-w-md w-full relative shadow-[0_0_50px_rgba(6,182,212,0.15)]">
+            <button onClick={() => setShow2FA(false)} className="absolute top-4 right-4 text-slate-500 hover:text-slate-800 transition-colors">
               <X size={20} />
             </button>
             <div className="flex justify-center mb-6">
@@ -205,8 +205,8 @@ export default function LoginPage() {
               </div>
             </div>
             <h3 className="text-2xl font-bold text-white text-center mb-2 tracking-tight">Device Verification</h3>
-            <p className="text-sm text-slate-400 text-center mb-8">
-              We've sent a 6-digit verification code to <strong className="text-white">{loginEmail}</strong>. 
+            <p className="text-sm text-slate-500 text-center mb-8">
+              We've sent a 6-digit verification code to <strong className="text-slate-800">{loginEmail}</strong>. 
               Please enter it below to complete sign-in.
             </p>
             
@@ -223,7 +223,7 @@ export default function LoginPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="w-12 h-14 bg-graphite-900 border border-white/10 rounded-xl text-center text-white text-2xl font-bold focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
+                    className="w-12 h-14 bg-slate-50 border border-slate-200 rounded-xl text-center text-slate-800 text-2xl font-bold focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all"
                   />
                 ))}
               </div>

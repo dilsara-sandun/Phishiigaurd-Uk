@@ -10,7 +10,7 @@ export default function NewsPanel({ news, loading }) {
              <div className="w-1.5 h-12 bg-white/[0.08] rounded-full" />
              <div className="flex-1 space-y-2">
                <div className="h-4 bg-white/[0.08] rounded w-3/4" />
-               <div className="h-3 bg-white/[0.06] rounded w-1/2" />
+               <div className="h-3 bg-slate-100 rounded w-1/2" />
              </div>
           </div>
         ))}
@@ -20,9 +20,9 @@ export default function NewsPanel({ news, loading }) {
 
   if (!news || news.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center bg-white/[0.02] rounded-xl border border-dashed border-white/[0.1]">
+      <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-xl border border-dashed border-white/[0.1]">
         <AlertTriangle size={24} className="text-slate-500 mb-2" />
-        <p className="text-sm text-slate-400">No recent security alerts.</p>
+        <p className="text-sm text-slate-500">No recent security alerts.</p>
         <p className="text-xs text-slate-500 mt-1">Hacker News feed is currently quiet or unavailable.</p>
       </div>
     )
@@ -36,7 +36,7 @@ export default function NewsPanel({ news, loading }) {
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-start gap-4 p-3 rounded-xl hover:bg-white/[0.04] transition-colors border border-transparent hover:border-white/[0.06]"
+          className="group flex items-start gap-4 p-3 rounded-xl hover:bg-slate-100 transition-colors border border-transparent hover:border-white/[0.06]"
         >
           <div className="w-1.5 h-12 rounded-full bg-gradient-to-b from-brand-500 to-transparent mt-0.5" />
           <div className="flex-1 min-w-0">
