@@ -169,47 +169,54 @@ export default function LandingPage() {
       </main>
 
       {/* 3 Premium Bento Cards */}
-      <section className="py-24 max-w-7xl mx-auto px-6 border-t border-white/5 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight mb-4">Precision Analysis at Scale</h2>
-          <p className="text-slate-500 max-w-2xl mx-auto">Detect sophisticated phishing attacks across multiple vectors using advanced machine learning models trained on global threat feeds.</p>
-        </div>
+      <section className="py-32 w-full relative z-10 overflow-hidden bg-[#0a0a1a]">
+        {/* Neon spheres background */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-fuchsia-500 rounded-full mix-blend-screen filter blur-[100px] opacity-60 animate-pulse-slow"></div>
+        <div className="absolute top-40 -left-20 w-80 h-80 bg-blue-500 rounded-full mix-blend-screen filter blur-[100px] opacity-60"></div>
+        <div className="absolute -bottom-40 right-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-screen filter blur-[90px] opacity-50"></div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-slate-100 transition-colors group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Scan size={120} className="text-brand-500" />
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-6 shadow-lg relative z-10">
-              <Scan size={24} className="text-brand-400" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Deep URL Scanning</h3>
-            <p className="text-slate-500 text-sm leading-relaxed relative z-10">Extracts 27 structural and lexical features from target URLs in milliseconds, processed by our proprietary XGBoost classifier.</p>
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="text-center mb-20">
+            <h2 className="text-5xl md:text-6xl font-extrabold text-white tracking-tight mb-6">Precision Analysis at Scale</h2>
+            <p className="text-slate-300 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">Detect sophisticated phishing attacks across multiple vectors using advanced machine learning models trained on global threat feeds.</p>
           </div>
 
-          {/* Card 2 */}
-          <div className="bg-slate-50 border border-white/5 rounded-3xl p-8 backdrop-blur-xl hover:bg-slate-100 transition-colors group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Mail size={120} className="text-brand-500" />
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Card 1 */}
+            <div className="bg-white/10 border border-white/20 rounded-3xl p-10 backdrop-blur-xl hover:bg-white/15 transition-all group relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+              <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:opacity-30 transition-opacity">
+                <Scan size={140} className="text-blue-400" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-8 shadow-lg relative z-10">
+                <Scan size={32} className="text-blue-300" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">Deep URL Scanning</h3>
+              <p className="text-slate-300 text-base leading-relaxed relative z-10">Extracts 27 structural and lexical features from target URLs in milliseconds, processed by our proprietary XGBoost classifier.</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center mb-6 shadow-lg relative z-10">
-              <Mail size={24} className="text-brand-400" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Semantic Email Analysis</h3>
-            <p className="text-slate-500 text-sm leading-relaxed relative z-10">Evaluates email payload intent using NLP and TF-IDF vectorization to identify urgent language, suspicious links, and spoofing attempts.</p>
-          </div>
 
-          {/* Card 3 */}
-          <div className="bg-gradient-to-br from-brand-900/40 to-midnight-900 border border-brand-500/20 rounded-3xl p-8 backdrop-blur-xl group relative overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.05)]">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
-              <Network size={120} className="text-brand-500" />
+            {/* Card 2 */}
+            <div className="bg-white/10 border border-white/20 rounded-3xl p-10 backdrop-blur-xl hover:bg-white/15 transition-all group relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+              <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:opacity-30 transition-opacity">
+                <Mail size={140} className="text-fuchsia-400" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-8 shadow-lg relative z-10">
+                <Mail size={32} className="text-fuchsia-300" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">Semantic Email Analysis</h3>
+              <p className="text-slate-300 text-base leading-relaxed relative z-10">Evaluates email payload intent using NLP and TF-IDF vectorization to identify urgent language, suspicious links, and spoofing attempts.</p>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-brand-500/20 border border-brand-500/30 flex items-center justify-center mb-6 shadow-lg relative z-10">
-              <Zap size={24} className="text-brand-400" />
+
+            {/* Card 3 */}
+            <div className="bg-white/10 border border-white/20 rounded-3xl p-10 backdrop-blur-xl hover:bg-white/15 transition-all group relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
+              <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:opacity-30 transition-opacity">
+                <Network size={140} className="text-pink-400" />
+              </div>
+              <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center mb-8 shadow-lg relative z-10">
+                <Zap size={32} className="text-pink-300" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4 relative z-10">Explainable AI (XAI)</h3>
+              <p className="text-slate-300 text-base leading-relaxed relative z-10">Every detection includes SHAP-value breakdowns, allowing security analysts to see exactly which features triggered the phishing verdict.</p>
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-3 relative z-10">Explainable AI (XAI)</h3>
-            <p className="text-slate-600 text-sm leading-relaxed relative z-10">Every detection includes SHAP-value breakdowns, allowing security analysts to see exactly which features triggered the phishing verdict.</p>
           </div>
         </div>
       </section>
@@ -285,7 +292,7 @@ export default function LandingPage() {
             <span className="text-brand-400 text-xs font-semibold uppercase tracking-wider">Enterprise Access</span>
           </div>
           
-          <h2 className="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight mb-6">Ready to secure your institution?</h2>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-6">Ready to secure your institution?</h2>
           <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">See how PhishGuard UK can integrate with your existing SOC tools and provide explainable AI threat detection in real-time.</p>
           
           <form className="flex flex-col sm:flex-row gap-4 justify-center max-w-lg mx-auto" onSubmit={(e) => { e.preventDefault(); alert('Demo request submitted successfully!'); }}>

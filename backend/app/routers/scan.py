@@ -15,6 +15,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 import magic
+import PyPDF2
+from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -347,17 +349,32 @@ async def scan_email_file(
     mime = magic.Magic(mime=True)
     detected_mime = mime.from_buffer(raw_bytes)
     
-    allowed_mimes = {"text/plain", "message/rfc822"}
+    allowed_mimes = {"text/plain", "message/rfc822", "application/pdf"}
     if detected_mime not in allowed_mimes:
         logger.warning("Rejected file upload with suspicious mime type: %s", detected_mime)
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="File content does not match allowed types (.eml or .txt)",
+            detail="File content does not match allowed types (.eml, .txt, .pdf)",
         )
 
-    # Parse .eml headers and body
-    subject, body = email_service.parse_eml(raw_bytes)
-    combined = f"Subject: {subject}\n\n{body}"
+    # Extract text based on file type
+    if detected_mime == "application/pdf":
+        try:
+            pdf_reader = PyPDF2.PdfReader(BytesIO(raw_bytes))
+            combined = ""
+            for page in pdf_reader.pages:
+                text = page.extract_text()
+                if text:
+                    combined += text + "\n"
+            if not combined.strip():
+                combined = "No readable text found in PDF."
+        except Exception as e:
+            logger.error(f"Error parsing PDF: {e}")
+            raise HTTPException(status_code=400, detail="Could not extract text from PDF")
+    else:
+        # Parse .eml headers and body
+        subject, body = email_service.parse_eml(raw_bytes)
+        combined = f"Subject: {subject}\n\n{body}"
 
     return await scan_email(
         request=request,

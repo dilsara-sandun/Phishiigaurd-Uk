@@ -150,9 +150,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/5 text-center">
+          <div className="mt-8 pt-6 border-t border-slate-200 text-center">
             <p className="text-base text-slate-500">
-              Not registered? <Link to="/register" className="text-white font-bold hover:text-brand-400 transition-colors">Create Account</Link>
+              Not registered? <Link to="/register" className="text-brand-600 font-bold hover:text-brand-700 transition-colors">Create Account</Link>
             </p>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function LoginPage() {
                 <Shield size={32} className="text-brand-400" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-white text-center mb-2 tracking-tight">Device Verification</h3>
+            <h3 className="text-2xl font-bold text-slate-800 text-center mb-2 tracking-tight">Device Verification</h3>
             <p className="text-sm text-slate-500 text-center mb-8">
               We've sent a 6-digit verification code to <strong className="text-slate-800">{loginEmail}</strong>. 
               Please enter it below to complete sign-in.

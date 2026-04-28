@@ -1,5 +1,5 @@
 import React, { createContext, useState } from 'react'
-import { scanUrl as apiScanUrl, scanDomain as apiScanDomain, scanEmail as apiScanEmail } from '../services/scanService'
+import { scanUrl as apiScanUrl, scanDomain as apiScanDomain, scanEmail as apiScanEmail, scanEmailFile as apiScanEmailFile } from '../services/scanService'
 import toast from 'react-hot-toast'
 
 export const ScanContext = createContext(null)
@@ -56,8 +56,24 @@ export const ScanProvider = ({ children }) => {
     }
   }
 
+  const scanEmailFile = async (file) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await apiScanEmailFile(file)
+      setLoading(false)
+      return result
+    } catch (err) {
+      setLoading(false)
+      const msg = err.response?.data?.detail || 'Failed to process email file'
+      setError(msg)
+      toast.error(msg)
+      throw err
+    }
+  }
+
   return (
-    <ScanContext.Provider value={{ scanUrl, scanDomain, scanEmail, loading, error }}>
+    <ScanContext.Provider value={{ scanUrl, scanDomain, scanEmail, scanEmailFile, loading, error }}>
       {children}
     </ScanContext.Provider>
   )

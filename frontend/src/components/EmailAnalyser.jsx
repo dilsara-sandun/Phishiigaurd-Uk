@@ -6,7 +6,7 @@ import AIExplanation from './AIExplanation'
 export default function EmailAnalyser() {
   const [content, setContent] = useState('')
   const [isHovering, setIsHovering] = useState(false)
-  const { scanEmail, loading } = useScan()
+  const { scanEmail, scanEmailFile, loading } = useScan()
   const [result, setResult] = useState(null)
   const fileInputRef = useRef(null)
 
@@ -20,12 +20,28 @@ export default function EmailAnalyser() {
     e.preventDefault()
     setIsHovering(false)
     const file = e.dataTransfer?.files?.[0]
-    if (file) readFile(file)
+    if (file) handleFileUpload(file)
   }
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0]
-    if (file) readFile(file)
+    if (file) handleFileUpload(file)
+  }
+
+  const handleFileUpload = async (file) => {
+    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      setContent(`[PDF Uploaded: ${file.name}]\n\nProcessing PDF document via AI...`)
+      try {
+        const res = await scanEmailFile(file)
+        setResult(res)
+        // Set the explanation text in the content box for visual feedback
+        setContent(`[PDF Processed: ${file.name}]\n\nThe text has been successfully extracted and analyzed by the PhishGuard AI pipeline. See results below.`)
+      } catch (err) {
+        setContent('')
+      }
+    } else {
+      readFile(file)
+    }
   }
 
   const readFile = (file) => {
@@ -44,7 +60,7 @@ export default function EmailAnalyser() {
           type="file" 
           ref={fileInputRef} 
           className="hidden" 
-          accept=".eml,.txt" 
+          accept=".eml,.txt,.pdf" 
           onChange={handleFileSelect} 
         />
 
@@ -59,7 +75,7 @@ export default function EmailAnalyser() {
           <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center mx-auto mb-4 border border-slate-200 shadow-sm text-brand-600">
             <Upload size={20} />
           </div>
-          <p className="text-sm font-semibold text-slate-700 mb-1">Click to upload or drag and drop .eml file here</p>
+          <p className="text-sm font-semibold text-slate-700 mb-1">Click to upload or drag and drop .eml, .txt, or .pdf here</p>
           <p className="text-xs text-slate-500 mb-6">or paste raw content below</p>
 
           <textarea

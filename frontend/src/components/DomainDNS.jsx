@@ -33,8 +33,8 @@ export default function DomainDNS() {
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="e.g. lloyds-verify.top"
-              className="w-full bg-slate-50 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
-                         text-slate-200 placeholder-slate-500 font-mono text-sm
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-11 pr-4 py-3.5
+                         text-slate-800 placeholder-slate-500 font-mono text-sm
                          focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 transition-all"
               disabled={loading}
               required
@@ -56,19 +56,19 @@ export default function DomainDNS() {
                <div className="space-y-3 font-mono text-sm">
                  <div className="flex justify-between border-b border-slate-200 pb-2">
                    <span className="text-slate-500">Registrar</span>
-                   <span className="text-slate-200 text-right">{result.dns_info.registrar || 'Unknown'}</span>
+                   <span className="text-slate-800 text-right font-semibold">{result.dns_info.registrar || 'Unknown'}</span>
                  </div>
                  <div className="flex justify-between border-b border-slate-200 pb-2">
                    <span className="text-slate-500">Age</span>
-                   <span className="text-slate-200">{result.dns_info.domain_age_days ? `${result.dns_info.domain_age_days} days` : 'Unknown'}</span>
+                   <span className="text-slate-800 font-semibold">{result.dns_info.domain_age_days ? `${result.dns_info.domain_age_days} days` : 'Unknown'}</span>
                  </div>
                  <div className="flex justify-between border-b border-slate-200 pb-2">
                    <span className="text-slate-500">Geo Location</span>
-                   <span className="text-slate-200">{result.dns_info.geo_ip_country || 'Unknown'} - {result.dns_info.geo_ip_city || 'Unknown'}</span>
+                   <span className="text-slate-800 font-semibold">{result.dns_info.geo_ip_country || 'Unknown'} - {result.dns_info.geo_ip_city || 'Unknown'}</span>
                  </div>
                  <div className="flex justify-between pb-2">
                    <span className="text-slate-500">SSL Issuer</span>
-                   <span className="text-slate-200">{result.dns_info.ssl_issuer || 'None Detected'}</span>
+                   <span className="text-slate-800 font-semibold">{result.dns_info.ssl_issuer || 'None Detected'}</span>
                  </div>
                </div>
             </div>
