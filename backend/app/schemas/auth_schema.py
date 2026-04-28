@@ -74,6 +74,17 @@ class TokenResponse(BaseModel):
     email: str
 
 
+class Login2FAInitResponse(BaseModel):
+    message: str
+    requires_2fa: bool = True
+    email: str
+
+
+class VerifyLoginRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(min_length=6, max_length=6)
+
+
 # ── Token refresh ─────────────────────────────────────────────────────────────
 
 class RefreshRequest(BaseModel):

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react'
-import { login as apiLogin, register as apiRegister, getMe, verifyOtp as apiVerifyOtp, forgotPassword as apiForgotPassword, resetPassword as apiResetPassword } from '../services/authService'
+import { login as apiLogin, verifyLoginOtp as apiVerifyLoginOtp, register as apiRegister, getMe, verifyOtp as apiVerifyOtp, forgotPassword as apiForgotPassword, resetPassword as apiResetPassword } from '../services/authService'
 import toast from 'react-hot-toast'
 
 export const AuthContext = createContext(null)
@@ -29,14 +29,31 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const data = await apiLogin(email, password)
+      if (data.requires_2fa) {
+         return { requires_2fa: true, email: data.email }
+      }
+      // Fallback if 2FA is disabled in the future
       localStorage.setItem('token', data.access_token)
-      // re-fetch user info
+      const userData = await getMe()
+      setUser(userData)
+      setIsAuthenticated(true)
+      return { success: true }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Login failed')
+      return { success: false }
+    }
+  }
+
+  const verifyLogin = async (email, otp) => {
+    try {
+      const data = await apiVerifyLoginOtp(email, otp)
+      localStorage.setItem('token', data.access_token)
       const userData = await getMe()
       setUser(userData)
       setIsAuthenticated(true)
       return true
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Login failed')
+      toast.error(error.response?.data?.detail || 'Verification failed')
       return false
     }
   }
@@ -94,7 +111,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, register, verifyOtp, forgotPassword, resetPassword, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, verifyLogin, register, verifyOtp, forgotPassword, resetPassword, logout }}>
       {children}
     </AuthContext.Provider>
   )

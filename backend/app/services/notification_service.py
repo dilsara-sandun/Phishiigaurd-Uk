@@ -7,6 +7,7 @@ Three email templates:
   1. send_otp_email              → Registration / email-verification OTP
   2. send_password_reset_email   → Password-reset deep-link email
   3. send_password_changed_email → "Your password was changed" confirmation
+4. send_login_verification_email → 2FA device verification code at login
 """
 
 import logging
@@ -417,6 +418,81 @@ async def send_password_changed_email(to_email: str) -> bool:
         f"If you did NOT make this change, reset your password immediately at:\n"
         f"  {settings.FRONTEND_BASE_URL}/login\n"
         f"and contact your security team.\n"
+    )
+
+    return await _send(to_email, subject, _html_shell(subject, body_html), plain)
+
+
+# ── Template 4: Login Verification (2FA) ──────────────────────────────────────
+
+async def send_login_verification_email(to_email: str, otp: str, device_info: str = "Unrecognized Device") -> bool:
+    """
+    Send a 2FA verification email during login for unrecognized devices.
+    Modeled structurally after enterprise alerts but uniquely branded.
+    """
+    subject = f"PhishGuard UK — Login Verification Code"
+
+    body_html = f"""
+      <h2 style="color:#f1f5f9;font-size:24px;font-weight:700;margin:0 0 16px;">
+        Device Verification Required
+      </h2>
+      <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px;">
+        A sign-in attempt requires further verification because we did not recognize your device.
+        To complete the sign-in, enter the verification code on the unrecognized device.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+        <tr>
+          <td style="background:#0a0f1a;border:1px solid rgba(255,255,255,0.07);
+                     border-radius:12px;padding:20px 24px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding:6px 0;
+                           border-bottom:1px solid rgba(255,255,255,0.05);">Device</td>
+                <td align="right" style="color:#e2e8f0;font-size:13px;
+                           font-weight:600;padding:6px 0;
+                           border-bottom:1px solid rgba(255,255,255,0.05);">
+                  {device_info}
+                </td>
+              </tr>
+              <tr>
+                <td style="color:#64748b;font-size:13px;padding:6px 0;">Verification code</td>
+                <td align="right" style="color:#06b6d4;font-size:24px;
+                           font-weight:700;padding:6px 0;letter-spacing:4px;">
+                  {otp}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        If you did not attempt to sign in to your account, your password may be compromised. 
+        Visit <a href="{settings.FRONTEND_BASE_URL}/reset-password" style="color:#06b6d4;">Password Security</a> 
+        to create a new, strong password.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
+                     border-radius:10px;padding:16px 20px;">
+            <p style="color:#f87171;font-size:13px;margin:0;">
+              🛡️ &nbsp;<strong>Security Alert:</strong> Ensure you retain access to your account.
+              Never share this code with anyone.
+            </p>
+          </td>
+        </tr>
+      </table>
+    """
+
+    plain = (
+        f"PhishGuard UK — Device Verification\n"
+        f"{'=' * 40}\n\n"
+        f"A sign-in attempt requires further verification.\n\n"
+        f"Device: {device_info}\n"
+        f"Verification code: {otp}\n\n"
+        f"If you did not attempt to sign in, your password may be compromised.\n"
     )
 
     return await _send(to_email, subject, _html_shell(subject, body_html), plain)

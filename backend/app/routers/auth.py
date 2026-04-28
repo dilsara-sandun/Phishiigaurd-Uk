@@ -29,6 +29,8 @@ from app.schemas.auth_schema import (
     RegisterResponse,
     ResetPasswordRequest,
     TokenResponse,
+    Login2FAInitResponse,
+    VerifyLoginRequest,
     UserProfile,
     VerifyOTPRequest,
 )
@@ -39,15 +41,18 @@ from app.services.auth_service import (
     create_refresh_token,
     decode_token,
     get_user_by_id,
+    get_user_by_email,
     refresh_access_token,
     register_user,
     reset_password_with_token,
     verify_otp,
+    _generate_otp,
 )
 from app.services.notification_service import (
     send_otp_email,
     send_password_reset_email,
     send_password_changed_email,
+    send_login_verification_email,
 )
 from app.config import settings
 import uuid
@@ -143,21 +148,17 @@ async def register(
 
 @router.post(
     "/login",
-    response_model=TokenResponse,
-    summary="Authenticate and receive JWT tokens",
+    response_model=Login2FAInitResponse,
+    summary="Authenticate and trigger 2FA OTP email",
 )
 @limiter.limit("10/minute")
 async def login(
     request: Request,
     body: LoginRequest,
-    response: Response,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> Login2FAInitResponse:
     """
-    Validate credentials and return a JWT access + refresh token pair.
-
-    Tokens are written into httpOnly cookies (browser clients) and also
-    returned in the response body (API / Axios clients).
+    Validate credentials and send a 2FA OTP email.
     Returns HTTP 401 on invalid credentials.
     """
     try:
@@ -169,6 +170,51 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Generate and save new OTP
+    otp, token_expires = _generate_otp()
+    user.verify_token = otp
+    user.verify_token_expires = token_expires
+    user.verify_token_attempts = 0
+    await db.commit()
+
+    device_info = request.headers.get("User-Agent", "Unrecognized Device")
+    await send_login_verification_email(user.email, otp, device_info)
+    
+    logger.info("2FA OTP sent for user login: %s", user.email)
+
+    return Login2FAInitResponse(
+        message="Verification code sent to your email.",
+        email=user.email,
+        requires_2fa=True
+    )
+
+
+# ── POST /auth/verify-login ───────────────────────────────────────────────────
+
+@router.post(
+    "/verify-login",
+    response_model=TokenResponse,
+    summary="Verify login OTP and receive JWT tokens",
+)
+@limiter.limit("10/minute")
+async def verify_login_endpoint(
+    request: Request,
+    body: VerifyLoginRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """
+    Accepts the 6-digit OTP sent to the user's email during login.
+    Returns the JWT access + refresh token pair on success.
+    """
+    try:
+        await verify_otp(db, body.email, body.otp)
+        await db.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        
+    user = await get_user_by_email(db, body.email)
+
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
 
@@ -177,7 +223,7 @@ async def login(
     response.delete_cookie("refresh_token", path="/api/auth/refresh")
     
     _set_token_cookies(response, access_token, refresh_token)
-    logger.info("User logged in (Session Rotated): %s (role=%s)", user.email, user.role)
+    logger.info("User logged in (2FA Verified, Session Rotated): %s (role=%s)", user.email, user.role)
 
     return TokenResponse(
         access_token=access_token,

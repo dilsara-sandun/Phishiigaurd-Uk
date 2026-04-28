@@ -6,6 +6,11 @@ export const login = async (email, password) => {
   return response.data
 }
 
+export const verifyLoginOtp = async (email, otp) => {
+  const response = await api.post('/auth/verify-login', { email, otp })
+  return response.data
+}
+
 export const register = async (email, password, confirmPassword) => {
   const payload = {
     email,
