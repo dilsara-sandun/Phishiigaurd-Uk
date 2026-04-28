@@ -132,6 +132,7 @@ export default function RegisterPage() {
                   type={showPwd ? 'text' : 'password'}
                   required
                   minLength={8}
+                  maxLength={72}
                   placeholder="Min. 8 characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -170,6 +171,7 @@ export default function RegisterPage() {
                   type={showConfirm ? 'text' : 'password'}
                   required
                   minLength={8}
+                  maxLength={72}
                   placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChange={e => setConfirm(e.target.value)}

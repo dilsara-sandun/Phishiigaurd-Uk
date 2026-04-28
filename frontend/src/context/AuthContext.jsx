@@ -41,12 +41,16 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const register = async (email, password) => {
+  const register = async (email, password, confirmPassword) => {
     try {
-      await apiRegister(email, password)
+      await apiRegister(email, password, confirmPassword)
       return true
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Registration failed')
+      const detail = error.response?.data?.detail
+      const msg = Array.isArray(detail)
+        ? detail.map(d => d.msg || d.message || JSON.stringify(d)).join('; ')
+        : detail || 'Registration failed'
+      toast.error(msg)
       return false
     }
   }

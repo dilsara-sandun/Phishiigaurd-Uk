@@ -108,6 +108,8 @@ async def _send(to_email: str, subject: str, html: str, plain: str) -> bool:
     """
     Deliver an HTML+plain-text multipart email via the configured SMTP server.
     Falls back to logging the content when SMTP credentials are absent (dev mode).
+    The entire SMTP session runs inside asyncio.to_thread so blocking I/O never
+    stalls the event loop.
     """
     if not settings.SMTP_USERNAME or not settings.SMTP_PASSWORD:
         logger.warning("SMTP not configured — email to %s not sent.", to_email)
@@ -127,20 +129,24 @@ async def _send(to_email: str, subject: str, html: str, plain: str) -> bool:
     msg.attach(MIMEText(plain, "plain", "utf-8"))
     msg.attach(MIMEText(html,  "html",  "utf-8"))
 
-    try:
+    def _blocking_send() -> None:
+        """Run the entire SMTP session in one blocking call (safe for thread pool)."""
         if settings.SMTP_PORT == 465:
-            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT)
+            server = smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30)
         else:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
+            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30)
             server.ehlo()
             server.starttls()
             server.ehlo()
 
-        # Run blocking SMTP operations in a thread pool
-        await asyncio.to_thread(server.login, settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-        await asyncio.to_thread(server.send_message, msg)
-        await asyncio.to_thread(server.quit)
-        
+        try:
+            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+            server.send_message(msg)
+        finally:
+            server.quit()
+
+    try:
+        await asyncio.to_thread(_blocking_send)
         logger.info("Email sent → %s | Subject: %s", to_email, subject)
         return True
     except Exception as exc:

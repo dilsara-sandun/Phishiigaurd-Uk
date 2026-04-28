@@ -107,23 +107,34 @@ async def register(
     """
     try:
         user = await register_user(db, body.email, body.password)
+        await db.commit()  # <--- CRITICAL: Must commit to save the user!
+        await db.refresh(user)
         logger.info("New user registered: %s (id=%s)", user.email, user.id)
         
         # Send OTP by email
-        await send_otp_email(user.email, user.verify_token)
+        email_sent = await send_otp_email(user.email, user.verify_token)
+        if not email_sent:
+            logger.error("Failed to send OTP email to %s", user.email)
         
     except ValueError as exc:
-        # Prevent Account Enumeration: Log the conflict internally but return standard success.
-        logger.warning("Registration blocked (Account Enumeration Mitigation): %s", str(exc))
-        return RegisterResponse(
-            message="Registration successful. Please check your email for the OTP code.",
-            user_id="pending-verification-state",
-        )
-
-    return RegisterResponse(
-        message="Registration successful. Please check your email for the OTP code.",
-        user_id=user.id,
-    )
+        err_msg = str(exc)
+        # If it's a "user already exists" error, we mitigate enumeration by returning success
+        if "already exists" in err_msg.lower():
+            logger.warning("Registration blocked (Account Enumeration Mitigation): %s", err_msg)
+            return RegisterResponse(
+                message="Registration successful. Please check your email for the OTP code.",
+                user_id="pending-verification-state",
+            )
+        
+        # For other ValueErrors (like password too long), we should probably let the user know
+        # but since the original code treated all ValueErrors as enumeration, I'll keep it 
+        # similar but log specifically.
+        logger.error("Registration failed with ValueError: %s", err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
+    
+    except Exception as exc:
+        logger.error("Unexpected error during registration: %s", exc, exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during registration")
 
 
 # ── POST /auth/login ──────────────────────────────────────────────────────────
