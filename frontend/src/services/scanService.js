@@ -6,8 +6,9 @@ export const scanUrl = async (url) => {
 }
 
 export const getHistory = async (limit = 50) => {
-  const response = await api.get('/scan/history', { params: { limit } })
-  return response.data
+  const response = await api.get('/history', { params: { limit } })
+  // Return the items array directly for simpler consumption in components
+  return response.data.items || []
 }
 
 export const scanDomain = async (domain) => {

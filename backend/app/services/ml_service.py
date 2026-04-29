@@ -39,7 +39,7 @@ UK_BANK_BRANDS: set[str] = {
 
 # Official UK bank registrable domains (base domain only)
 LEGITIMATE_BANK_DOMAINS: set[str] = {
-    "lloydsbank.co.uk", "natwest.com", "barclays.co.uk", "hsbc.co.uk",
+    "lloydsbank.co.uk", "lloydsbank.com", "natwest.com", "barclays.co.uk", "hsbc.co.uk",
     "santander.co.uk", "nationwide.co.uk", "halifax.co.uk", "monzo.com",
     "starlingbank.com", "revolut.com", "firstdirect.com", "metrobankonline.co.uk",
     "tsb.co.uk", "rbs.co.uk", "co-operativebank.co.uk", "virginmoney.com",

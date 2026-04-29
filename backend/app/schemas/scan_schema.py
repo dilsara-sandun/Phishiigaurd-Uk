@@ -147,6 +147,8 @@ class ScanHistoryItem(BaseModel):
     score_pct: int
     model_version: str
     created_at: datetime
+    explanation: str | None = None
+    feature_values: dict[str, Any] | None = None
 
     model_config = {"from_attributes": True}
 

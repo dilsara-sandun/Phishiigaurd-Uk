@@ -3,13 +3,14 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ScanLine, History, LifeBuoy,
   Shield, ChevronLeft, ChevronRight,
-  Wifi, Globe, Mail, AlertTriangle, Settings
+  Wifi, Globe, Mail, AlertTriangle, Settings, FileSearch
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const NAV = [
   { label: 'Overview',        icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Analysis Centre', icon: ScanLine,        to: '/analysis'  },
+  { label: 'Page Analyzer',   icon: FileSearch,      to: '/analyzer'  },
   { label: 'Scan History',    icon: History,         to: '/history'   },
   { label: 'Support',         icon: LifeBuoy,        to: '/support'   },
 ]
@@ -53,23 +54,23 @@ export default function Sidebar({ open, setOpen }) {
     <aside
       className={clsx(
         'fixed top-0 left-0 h-screen z-40 flex flex-col',
-        'bg-gradient-to-b from-midnight-900 to-graphite-900 border-r border-white/[0.06]',
+        'bg-white border-r border-slate-200',
         'transition-all duration-300 ease-in-out',
         collapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Logo */}
       <div className={clsx(
-        'flex items-center h-16 border-b border-white/[0.06] flex-shrink-0',
+        'flex items-center h-16 border-b border-slate-200 flex-shrink-0',
         collapsed ? 'justify-center px-2' : 'px-5 gap-3'
       )}>
-        <div className="w-9 h-9 rounded-xl bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow">
-          <Shield size={20} className="text-slate-800" />
+        <div className="w-9 h-9 rounded-xl bg-gradient-brand flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Shield size={20} className="text-white" />
         </div>
         {!collapsed && (
           <div>
-            <p className="text-white font-bold text-sm leading-tight">PhishGuard</p>
-            <p className="text-brand-400 text-xs font-medium">UK Banking</p>
+            <p className="text-black font-black text-sm leading-tight">PhishGuard</p>
+            <p className="text-brand-600 text-xs font-bold uppercase tracking-widest">UK Banking</p>
           </div>
         )}
       </div>
@@ -77,26 +78,26 @@ export default function Sidebar({ open, setOpen }) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-0.5">
         {!collapsed && (
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 mb-2">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
             Monitor
           </p>
         )}
-        {NAV.slice(0, 2).map((item) => (
+        {NAV.slice(0, 3).map((item) => (
           <NavItem key={item.to} item={item} collapsed={collapsed} />
         ))}
 
         {!collapsed && (
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 mt-4 mb-2">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mt-4 mb-2">
             History
           </p>
         )}
-        {NAV.slice(2).map((item) => (
+        {NAV.slice(3).map((item) => (
           <NavItem key={item.to} item={item} collapsed={collapsed} />
         ))}
 
         {!collapsed && (
           <>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest px-3 mt-4 mb-2">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mt-4 mb-2">
               Quick Scan
             </p>
             {TOOLS.map((item) => (
@@ -109,14 +110,14 @@ export default function Sidebar({ open, setOpen }) {
       {/* Live indicator */}
       {!collapsed && (
         <div className="px-3 pb-4">
-          <div className="glass-card-light p-3 rounded-xl flex items-center gap-2.5">
+          <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center gap-2.5">
             <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-safe-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-safe-500" />
             </span>
             <div>
-              <p className="text-xs font-medium text-slate-600">Models online</p>
-              <p className="text-xs text-slate-500">XGBoost v1 active</p>
+              <p className="text-xs font-bold text-black">Models online</p>
+              <p className="text-[10px] text-slate-500 font-medium">XGBoost v1 active</p>
             </div>
           </div>
         </div>
@@ -125,13 +126,13 @@ export default function Sidebar({ open, setOpen }) {
       {/* Collapse toggle */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center justify-center h-10 border-t border-white/[0.06]
-                   text-slate-500 hover:text-slate-800 hover:bg-slate-100
+        className="flex items-center justify-center h-10 border-t border-slate-200
+                   text-slate-400 hover:text-black hover:bg-slate-50
                    transition-colors duration-150"
       >
         {collapsed
           ? <ChevronRight size={16} />
-          : <><ChevronLeft size={16} /><span className="text-xs ml-1">Collapse</span></>
+          : <><ChevronLeft size={16} /><span className="text-xs ml-1 font-bold">Collapse</span></>
         }
       </button>
     </aside>

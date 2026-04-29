@@ -17,6 +17,7 @@ import LandingPage from './pages/LandingPage'
 import PlatformPage from './pages/PlatformPage'
 import BlogPage from './pages/BlogPage'
 import GamePage from './pages/GamePage'
+import PageAnalyzer from './pages/PageAnalyzer'
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
           >
             <Route path="dashboard" element={<OverviewDashboard />} />
             <Route path="analysis" element={<AnalysisCentre />} />
+            <Route path="analyzer" element={<PageAnalyzer />} />
             <Route path="history" element={<HistoryPage />} />
             <Route path="support" element={<SupportPage />} />
           </Route>

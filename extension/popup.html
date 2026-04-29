@@ -1,127 +1,362 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>PhishGuard UK Live Analyzer</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      width: 320px;
-      padding: 15px;
-      margin: 0;
-      background-color: #f8fafc;
-      color: #0f172a;
-    }
-    .header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 10px;
-    }
-    .header img {
-      width: 24px;
-      height: 24px;
-      margin-right: 10px;
-    }
-    .header h2 {
-      margin: 0;
-      font-size: 16px;
-      color: #1e3a8a;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    button:hover {
-      background-color: #1d4ed8;
-    }
-    button:disabled {
-      background-color: #94a3b8;
-      cursor: not-allowed;
-    }
-    #result {
-      margin-top: 15px;
-      font-size: 14px;
-      display: none;
-    }
-    .status {
-      font-weight: bold;
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 4px;
-    }
-    .status.phishing { background-color: #fee2e2; color: #b91c1c; }
-    .status.legitimate { background-color: #dcfce3; color: #166534; }
-    .status.suspicious { background-color: #fef9c3; color: #854d0e; }
-    
-    .section {
-      margin-bottom: 10px;
-    }
-    .section h3 {
-      margin: 0 0 5px 0;
-      font-size: 13px;
-      color: #475569;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .details {
-      background: white;
-      border: 1px solid #e2e8f0;
-      padding: 8px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-    #explanation {
-      font-style: italic;
-      color: #334155;
-    }
-    .loader {
-      display: none;
-      text-align: center;
-      margin-top: 15px;
-      color: #64748b;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard UK - Enterprise Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --brand-50: #f0f9ff;
+            --brand-500: #0ea5e9;
+            --brand-600: #0284c7;
+            --slate-50: #f8fafc;
+            --slate-900: #0f172a;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-400: #94a3b8;
+            --phishing: #ef4444;
+            --legitimate: #22c55e;
+            --suspicious: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            width: 380px;
+            margin: 0;
+            background-color: var(--slate-900);
+            color: white;
+            overflow: hidden;
+        }
+
+        .container {
+            padding: 20px;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 1) 100%);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-circle {
+            width: 32px;
+            height: 32px;
+            background: var(--brand-600);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--slate-400);
+            font-weight: 600;
+        }
+
+        /* Hero Action */
+        .hero {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+
+        #analyzeBtn {
+            width: 100%;
+            padding: 12px;
+            background: var(--brand-600);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        #analyzeBtn:hover {
+            background: var(--brand-500);
+            transform: translateY(-1px);
+        }
+
+        #analyzeBtn:active {
+            transform: translateY(0);
+        }
+
+        #analyzeBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Scanning State */
+        .loader-container {
+            display: none;
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--brand-500);
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-size: 13px;
+            color: var(--slate-400);
+            font-weight: 500;
+        }
+
+        /* Result View */
+        #resultView {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .status-banner {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-banner.phishing { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .status-banner.legitimate { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); }
+        .status-banner.suspicious { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        .status-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .score-display {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Technical Grid */
+        .data-grid {
+            display: grid;
+            grid-template-cols: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .data-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .data-label {
+            font-size: 10px;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .data-value {
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* AI Verdict Card */
+        .verdict-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            color: var(--brand-500);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .verdict-text {
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--slate-400);
+            font-style: italic;
+        }
+
+        /* Flags */
+        .flags-container {
+            margin-top: 10px;
+        }
+
+        .flag {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 11px;
+            padding: 8px;
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+
+        .flag.red { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+        .flag.green { background: rgba(34, 197, 94, 0.1); color: #86efac; }
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .dashboard-link {
+            color: var(--brand-500);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .dashboard-link:hover {
+            color: var(--brand-600);
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <h2>PhishGuard UK Live Analyzer</h2>
-  </div>
-  
-  <p style="font-size: 13px; color: #64748b; margin-top: 0;">Click below to analyze the current page's tech stack and indicators.</p>
-  
-  <button id="analyzeBtn">Analyze Current Page</button>
-  
-  <div class="loader" id="loader">Analyzing... Please wait.</div>
-  
-  <div id="result">
-    <div id="statusBadge" class="status"></div>
-    
-    <div class="section">
-      <h3>AI Verdict</h3>
-      <div class="details" id="explanation"></div>
-    </div>
-    
-    <div class="section">
-      <h3>Quick Details</h3>
-      <div class="details">
-        <div id="techStack"></div>
-        <div id="riskFactors" style="margin-top: 5px; color: #b91c1c;"></div>
-      </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 15px;">
-      <a href="http://localhost:5173/app/platform" target="_blank" style="color: #2563eb; font-size: 12px; text-decoration: none;">View full report in Dashboard</a>
-    </div>
-  </div>
+    <div class="container">
+        <header class="header">
+            <div class="brand">
+                <div class="logo-circle">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h1>PhishGuard <span style="color: var(--brand-500)">UK</span></h1>
+            </div>
+            <div class="badge">v1.2 ENTERPRISE</div>
+        </header>
 
-  <script src="popup.js"></script>
+        <main>
+            <div id="initialView">
+                <div class="hero">
+                    <p style="font-size: 13px; color: var(--slate-400); margin-bottom: 24px;">
+                        Enterprise-grade heuristic & AI analysis for UK retail banking security.
+                    </p>
+                    <button id="analyzeBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        Initiate Deep Scan
+                    </button>
+                </div>
+            </div>
+
+            <div id="loaderView" class="loader-container">
+                <div class="spinner"></div>
+                <div class="loading-text">Analyzing technical signatures...</div>
+            </div>
+
+            <div id="resultView">
+                <div id="statusBanner" class="status-banner">
+                    <div id="statusIcon"></div>
+                    <div class="status-label" id="statusText">LEGITIMATE</div>
+                    <div class="score-display" id="scorePct">0%</div>
+                </div>
+
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-label">Infrastructure</div>
+                        <div class="data-value" id="hostingVal">Unknown</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Server IP</div>
+                        <div class="data-value" id="ipVal">0.0.0.0</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Technology</div>
+                        <div class="data-value" id="techVal">Standard</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Security</div>
+                        <div class="data-value" id="secVal">Analyzed</div>
+                    </div>
+                </div>
+
+                <div class="verdict-card">
+                    <div class="card-header">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14v-4m0-4h.01"/></svg>
+                        EXPERT SYSTEM REPORT
+                    </div>
+                    <div class="verdict-text" id="explanationText">
+                        Awaiting technical summary from core engine...
+                    </div>
+                </div>
+
+                <div id="flagsList" class="flags-container">
+                    <!-- Flags injected here -->
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <a href="http://localhost:5173/analyzer" target="_blank" class="dashboard-link">
+                Access Page Analyzer Feed →
+            </a>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>

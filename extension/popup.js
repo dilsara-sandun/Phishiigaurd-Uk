@@ -1,92 +1,133 @@
+// PhishGuard UK - Enterprise Analyzer Script
+
 document.getElementById('analyzeBtn').addEventListener('click', async () => {
-  const analyzeBtn = document.getElementById('analyzeBtn');
-  const loader = document.getElementById('loader');
-  const resultDiv = document.getElementById('result');
+  const initialView = document.getElementById('initialView');
+  const loaderView = document.getElementById('loaderView');
+  const resultView = document.getElementById('resultView');
   
-  analyzeBtn.disabled = true;
-  loader.style.display = 'block';
-  resultDiv.style.display = 'none';
+  // Transition to loader
+  initialView.style.display = 'none';
+  loaderView.style.display = 'block';
 
   try {
-    // Get current active tab
+    // 1. Get current active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    console.log("Analyzing tab:", tab.url);
     
-    // Inject content script if not already there, then send message
+    // 2. Request data from content script
     chrome.tabs.sendMessage(tab.id, { action: "analyzePage" }, async (pageData) => {
-      if (chrome.runtime.lastError) {
-        console.error("Error sending message to content script. Make sure it's injected.", chrome.runtime.lastError);
-        alert("Could not connect to the page. Try refreshing it.");
+      console.log("Data from content script:", pageData);
+      if (chrome.runtime.lastError || !pageData) {
+        console.error("Data extraction failed:", chrome.runtime.lastError);
+        alert("PhishGuard: Could not extract page data. Please refresh the page and try again.");
         resetUI();
         return;
       }
       
-      if (!pageData) {
-        alert("Failed to extract data from the page.");
-        resetUI();
-        return;
-      }
-
-      // Send to backend
+      // 3. Send to Backend
       try {
-        // Adjust port if your backend runs on a different one (e.g., 8000)
-        const response = await fetch('http://localhost:8000/api/v1/extension/analyse', {
+        console.log("Sending to backend:", 'http://127.0.0.1:8000/api/extension/analyse');
+        const response = await fetch('http://127.0.0.1:8000/api/extension/analyse', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(pageData)
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Backend error: ${response.status}`);
 
         const result = await response.json();
-        displayResult(result);
+        renderResults(result);
       } catch (error) {
-        console.error('Error contacting backend:', error);
-        alert('Error contacting PhishGuard backend. Is it running on port 8000?');
+        console.error('Backend connection failed:', error);
+        alert('PhishGuard Core Engine is offline. Ensure your backend is running on port 8000.');
         resetUI();
       }
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Extension error:', error);
     resetUI();
   }
 });
 
-function displayResult(result) {
-  const loader = document.getElementById('loader');
-  const resultDiv = document.getElementById('result');
-  const statusBadge = document.getElementById('statusBadge');
-  const explanation = document.getElementById('explanation');
-  const techStack = document.getElementById('techStack');
-  const riskFactors = document.getElementById('riskFactors');
+function renderResults(result) {
+  const loaderView = document.getElementById('loaderView');
+  const resultView = document.getElementById('resultView');
+  
+  // Elements
+  const statusBanner = document.getElementById('statusBanner');
+  const statusIcon = document.getElementById('statusIcon');
+  const statusText = document.getElementById('statusText');
+  const scorePct = document.getElementById('scorePct');
+  const hostingVal = document.getElementById('hostingVal');
+  const ipVal = document.getElementById('ipVal');
+  const techVal = document.getElementById('techVal');
+  const secVal = document.getElementById('secVal');
+  const explanationText = document.getElementById('explanationText');
+  const flagsList = document.getElementById('flagsList');
 
-  loader.style.display = 'none';
-  resultDiv.style.display = 'block';
+  // 1. Hide Loader, Show Results
+  loaderView.style.display = 'none';
+  resultView.style.display = 'block';
 
-  // Set status
-  statusBadge.className = `status ${result.label}`;
-  statusBadge.textContent = `${result.label.toUpperCase()} (Score: ${result.score_pct}%)`;
-
-  // Set AI Explanation
-  explanation.textContent = result.explanation || "No explanation provided.";
-
-  // Set Tech Stack
-  techStack.innerHTML = `<strong>Tech Stack:</strong> ${result.tech_stack.length > 0 ? result.tech_stack.join(', ') : 'Unknown'}`;
-
-  // Set Risk Factors
-  if (result.red_flags && result.red_flags.length > 0) {
-    riskFactors.innerHTML = `<strong>Red Flags:</strong><ul style="margin:0; padding-left:20px;">
-      ${result.red_flags.map(f => `<li>${f.description}</li>`).join('')}
-    </ul>`;
+  // 2. Set Status Style
+  statusBanner.className = `status-banner ${result.label}`;
+  
+  if (result.label === 'legitimate') {
+      statusText.textContent = 'TRUSTED';
+      scorePct.textContent = `${100 - result.score_pct}% SECURE`;
+  } else if (result.label === 'suspicious') {
+      statusText.textContent = 'SUSPICIOUS';
+      scorePct.textContent = `${result.score_pct}% RISK`;
   } else {
-    riskFactors.innerHTML = '';
+      statusText.textContent = 'PHISHING';
+      scorePct.textContent = `${result.score_pct}% THREAT`;
+      // Scary warning for phishing
+      explanationText.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CRITICAL SECURITY WARNING:</span> ${result.explanation}`;
   }
+  
+  // Icons based on label
+  if (result.label === 'phishing') {
+    statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+  } else if (result.label === 'legitimate') {
+    statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>';
+  } else {
+    statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+  }
+
+  // 3. Set Technical Grid
+  hostingVal.textContent = result.hosting || 'Proprietary';
+  ipVal.textContent = result.server_ip || 'Hidden/Proxy';
+  techVal.textContent = result.tech_stack.length > 0 ? result.tech_stack[0] : 'Standard';
+  
+  const hasSecurity = result.green_flags.some(f => f.flag_name === 'security_policy_present');
+  secVal.textContent = hasSecurity ? 'Strict' : 'Standard';
+  secVal.style.color = hasSecurity ? '#22c55e' : '#94a3b8';
+
+  // 4. Set Explanation
+  explanationText.textContent = result.explanation;
+
+  // 5. Render Flags
+  flagsList.innerHTML = '';
+  
+  // Green flags first
+  result.green_flags.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'flag green';
+    div.innerHTML = `<span>✅</span> <span>${f.description}</span>`;
+    flagsList.appendChild(div);
+  });
+
+  // Red flags
+  result.red_flags.forEach(f => {
+    const div = document.createElement('div');
+    div.className = 'flag red';
+    div.innerHTML = `<span>❌</span> <span>${f.description}</span>`;
+    flagsList.appendChild(div);
+  });
 }
 
 function resetUI() {
-  document.getElementById('analyzeBtn').disabled = false;
-  document.getElementById('loader').style.display = 'none';
+  document.getElementById('initialView').style.display = 'block';
+  document.getElementById('loaderView').style.display = 'none';
+  document.getElementById('resultView').style.display = 'none';
 }

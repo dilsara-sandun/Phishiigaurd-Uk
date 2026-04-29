@@ -53,10 +53,10 @@ export default function OverviewDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="page-title text-3xl 2xl:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-brand-300 via-brand-100 to-white font-extrabold tracking-tight">
+          <h1 className="page-title text-3xl 2xl:text-5xl text-black font-black tracking-tight">
             National Phishing Overview
           </h1>
-          <p className="page-sub text-lg 2xl:text-xl text-brand-200/70 mt-2">
+          <p className="page-sub text-lg 2xl:text-xl text-slate-800 font-semibold mt-2">
             Live intelligence across the UK retail banking sector
           </p>
         </div>
@@ -97,27 +97,27 @@ export default function OverviewDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 2xl:gap-10">
+      <div className="grid grid-cols-1 gap-8 2xl:gap-10">
         
-        {/* Left Col: Charts */}
-        <div className="xl:col-span-2 space-y-8 2xl:space-y-10">
+        {/* Main Content: Charts & Analytics */}
+        <div className="space-y-8 2xl:space-y-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 2xl:gap-8">
             
             <div className="glass-card p-6 2xl:p-8 h-[360px] 2xl:h-[480px] flex flex-col hover:border-brand-500/30 transition-colors">
-              <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
-                <ShieldCheck className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Letigimacy Ratio
+              <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl text-black">
+                <ShieldCheck className="text-brand-700 w-6 h-6 2xl:w-8 2xl:h-8" /> Legitimacy Ratio
               </h3>
-              <p className="text-sm 2xl:text-base text-slate-500 mb-4">Distribution of scanned URLs in the last 24h</p>
+              <p className="text-sm 2xl:text-base text-black mb-4 font-medium">Distribution of scanned URLs in the last 24h</p>
               <div className="flex-1 min-h-0">
                 <RiskDonut data={donutData} />
               </div>
             </div>
             
             <div className="glass-card p-6 2xl:p-8 h-[360px] 2xl:h-[480px] flex flex-col hover:border-brand-500/30 transition-colors">
-              <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
-                <Globe2 className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Targeted Brands
+              <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl text-black">
+                <Globe2 className="text-brand-700 w-6 h-6 2xl:w-8 2xl:h-8" /> Targeted Brands
               </h3>
-              <p className="text-sm 2xl:text-base text-slate-500 mb-4">Most spoofed corporate identities</p>
+              <p className="text-sm 2xl:text-base text-black mb-4 font-medium">Most spoofed corporate identities</p>
               <div className="flex-1 min-h-0">
                 <BrandsBar data={barData} />
               </div>
@@ -130,47 +130,47 @@ export default function OverviewDashboard() {
              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 opacity-80 group-hover:opacity-100 transition-opacity"></div>
              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
-                  <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl text-fuchsia-400">
+                  <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl text-fuchsia-800">
                     <Zap className="w-6 h-6 2xl:w-8 2xl:h-8" /> LLM Token Analytics
                   </h3>
-                  <p className="text-sm 2xl:text-base text-slate-500 mt-2 max-w-2xl">
-                    Our Phi-3 AI model processes webpage content by breaking text down into "Tokens" (words or sub-words). 
+                  <p className="text-sm 2xl:text-base text-black mt-2 max-w-4xl">
+                    Our Enterprise AI model processes webpage content by breaking text down into "Tokens" (words or sub-words). 
                     Monitoring token throughput ensures our LLM remains highly performant during real-time phishing analysis.
                   </p>
                 </div>
-                <span className="px-4 py-1.5 bg-fuchsia-500/10 text-fuchsia-400 text-sm font-bold rounded-full border border-fuchsia-500/20 whitespace-nowrap">
-                  MODEL: PHI-3-MINI
+                <span className="px-4 py-1.5 bg-fuchsia-500/10 text-fuchsia-600 text-sm font-bold rounded-full border border-fuchsia-500/20 whitespace-nowrap">
+                  MODEL: GEMINI-1.5-FLASH
                 </span>
              </div>
              
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 2xl:gap-8">
                 <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Tokens Processed (24h)</p>
-                  <p className="text-3xl 2xl:text-4xl font-black text-slate-800 flex items-baseline gap-2">
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-widest font-bold">Tokens Processed (24h)</p>
+                  <p className="text-3xl 2xl:text-4xl font-black text-black flex items-baseline gap-2">
                     42.8M
-                    <span className="text-sm font-medium text-fuchsia-400">+3.1M today</span>
+                    <span className="text-sm font-medium text-fuchsia-600">+3.1M today</span>
                   </p>
                 </div>
                 
                 <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Avg. Inference Speed</p>
-                  <p className="text-3xl 2xl:text-4xl font-black text-slate-800 flex items-baseline gap-2">
-                    86 <span className="text-lg 2xl:text-xl font-medium text-slate-500">tokens/sec</span>
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-widest font-bold">Avg. Inference Speed</p>
+                  <p className="text-3xl 2xl:text-4xl font-black text-black flex items-baseline gap-2">
+                    120 <span className="text-lg 2xl:text-xl font-medium text-slate-600">tokens/sec</span>
                   </p>
                 </div>
 
                 <div className="p-5 2xl:p-6 bg-white hover:bg-fuchsia-500/[0.05] transition-colors rounded-2xl border border-slate-200 relative overflow-hidden">
                   <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-fuchsia-500/10 rounded-full blur-2xl"></div>
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-widest font-semibold">Context Window Usage</p>
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-widest font-bold">Context Window Usage</p>
                   <div className="flex items-center gap-3 mt-3">
-                     <p className="text-xl 2xl:text-2xl font-bold text-slate-800">45%</p>
-                     <div className="flex-1 h-2.5 2xl:h-3 bg-white/10 rounded-full overflow-hidden">
+                     <p className="text-xl 2xl:text-2xl font-bold text-black">45%</p>
+                     <div className="flex-1 h-2.5 2xl:h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
                         <div className="h-full bg-gradient-to-r from-fuchsia-600 to-pink-500 w-[45%]"></div>
                      </div>
                   </div>
-                  <p className="text-xs 2xl:text-sm text-slate-500 mt-2">Avg 1,840 / 4,096 tokens per scan</p>
+                  <p className="text-xs 2xl:text-sm text-slate-600 mt-2">Avg 1,840 / 8,192 tokens per scan</p>
                 </div>
              </div>
           </div>
@@ -179,61 +179,48 @@ export default function OverviewDashboard() {
           <div className="glass-card p-6 2xl:p-8 relative overflow-hidden group">
              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-500 via-indigo-500 to-purple-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl">
-                  <Activity className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Enterprise System Health
+                <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl text-black">
+                  <Activity className="text-brand-600 w-6 h-6 2xl:w-8 2xl:h-8" /> Enterprise System Health
                 </h3>
-                <span className="px-4 py-1.5 bg-safe-500/10 text-safe-400 text-sm font-bold rounded-full border border-safe-500/20 whitespace-nowrap">
+                <span className="px-4 py-1.5 bg-safe-500/10 text-safe-600 text-sm font-bold rounded-full border border-safe-500/20 whitespace-nowrap">
                   ALL SYSTEMS NOMINAL
                 </span>
              </div>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-5 2xl:gap-8">
                 <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">XGBoost Engine</p>
-                  <p className="text-base 2xl:text-lg font-bold text-safe-400 flex items-center gap-3">
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-wider font-bold">XGBoost Engine</p>
+                  <p className="text-base 2xl:text-lg font-bold text-safe-600 flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-safe-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-safe-500"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-safe-600"></span>
                     </span>
                     Online
                   </p>
                 </div>
                 <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">Phi-3 LLM Node</p>
-                  <p className="text-base 2xl:text-lg font-bold text-safe-400 flex items-center gap-3">
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-wider font-bold">Gemini AI API</p>
+                  <p className="text-base 2xl:text-lg font-bold text-safe-600 flex items-center gap-3">
                     <span className="relative flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-safe-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-safe-500"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-safe-600"></span>
                     </span>
-                    Local Active
+                    Connected
                   </p>
                 </div>
                 <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">Threat Feed Sync</p>
-                  <p className="text-base 2xl:text-lg font-bold text-slate-600">Just now</p>
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-wider font-bold">Threat Feed Sync</p>
+                  <p className="text-base 2xl:text-lg font-bold text-black">Sync Active</p>
                 </div>
                 <div className="p-5 bg-white hover:bg-slate-50 transition-colors rounded-xl border border-slate-200">
-                  <p className="text-xs 2xl:text-sm text-slate-500 mb-2 uppercase tracking-wider font-semibold">API Rate Limit</p>
+                  <p className="text-xs 2xl:text-sm text-slate-600 mb-2 uppercase tracking-wider font-bold">API Performance</p>
                   <div className="flex items-center gap-3">
-                     <p className="text-base 2xl:text-lg font-bold text-slate-600">98%</p>
-                     <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                     <p className="text-base 2xl:text-lg font-bold text-black">98%</p>
+                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full bg-brand-500 w-[98%]"></div>
                      </div>
                   </div>
                 </div>
              </div>
-          </div>
-        </div>
-
-        {/* Right Col: Feed */}
-        <div className="xl:col-span-1">
-          <div className="glass-card p-6 2xl:p-8 h-[calc(100vh-140px)] 2xl:min-h-[1000px] flex flex-col sticky top-6">
-            <h3 className="section-title flex items-center gap-3 mb-2 2xl:text-2xl">
-              <FileSearch className="text-brand-400 w-6 h-6 2xl:w-8 2xl:h-8" /> Live Threat Feed
-            </h3>
-            <p className="text-sm 2xl:text-base text-slate-500 mb-6">Latest phishing alerts from Hacker News</p>
-            <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar">
-              <NewsPanel news={news} loading={newsLoading} />
-            </div>
           </div>
         </div>
 

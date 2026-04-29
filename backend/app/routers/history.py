@@ -101,6 +101,8 @@ async def get_history(
             score_pct=int(round(s.score * 100)),
             model_version=s.model_version,
             created_at=s.created_at,
+            explanation=s.explanation,
+            feature_values=s.feature_values,
         )
         for s in scans
     ]

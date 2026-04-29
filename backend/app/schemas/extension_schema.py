@@ -15,3 +15,4 @@ class ExtensionPayload(BaseModel):
     links: List[str]
     suspiciousKeywords: List[str]
     urgencyKeywords: List[str]
+    metaMetadata: Optional[dict] = {}
