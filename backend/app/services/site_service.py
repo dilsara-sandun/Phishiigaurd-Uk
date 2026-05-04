@@ -134,6 +134,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
     tech_str = str(payload.techStack).lower()
     meta_str = str(payload.metaMetadata).lower()
     
+    # Improved Hosting Detection
     if any(k in tech_str or k in meta_str for k in ["cloudfront", "amazon", "aws", "s3"]):
         hosting_provider = "AWS (Amazon Web Services)"
     elif any(k in tech_str or k in meta_str for k in ["google", "appspot", "gcp"]):
@@ -142,14 +143,36 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         hosting_provider = "Microsoft Azure"
     elif "cloudflare" in tech_str or "cloudflare" in meta_str:
         hosting_provider = "Cloudflare CDN"
-    
+    elif "heroku" in tech_str:
+        hosting_provider = "Heroku"
+    elif "digitalocean" in tech_str:
+        hosting_provider = "DigitalOcean"
+
+    # Programming Language / Framework Detection
+    detected_tech = list(payload.techStack)
+    if "asp.net" in tech_str or "__viewstate" in meta_str:
+        detected_tech.append("C# / ASP.NET")
+    if "php" in tech_str:
+        detected_tech.append("PHP")
+    if "react" in tech_str:
+        detected_tech.append("React.js")
+    if "vue" in tech_str:
+        detected_tech.append("Vue.js")
+    if "django" in tech_str:
+        detected_tech.append("Python (Django)")
+    if "laravel" in tech_str:
+        detected_tech.append("PHP (Laravel)")
+
+    # Deduplicate detected tech
+    detected_tech = list(set(detected_tech))
+
     # Detect Security Headers
-    has_security_meta = any(k in meta_str for k in ["content-security-policy", "strict-transport-security"])
+    has_security_meta = any(k in meta_str for k in ["content-security-policy", "strict-transport-security", "x-frame-options"])
     if has_security_meta:
         green_flags.append(FlagItem(
             flag_type="green",
             flag_name="security_policy_present",
-            description="Page defines explicit security or content policies via meta tags."
+            description="Page defines explicit security or content policies (CSP/HSTS) via meta tags."
         ))
 
     # 6. Enterprise Scoring Logic (Refined Parameters)
@@ -159,23 +182,23 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         # Weighted Scoring
         base_score = 0.15
         if intel_hit: base_score += 0.80 # Automatic Phishing
-        if not ssl_info: base_score += 0.40 # Very High Risk
+        if not ssl_info: base_score += 0.45 # Very High Risk
         
         # Heuristic modifiers
         weights = {
-            "mismatched_form_action": 0.35,
-            "brand_impersonation_risk": 0.45,
-            "urgency_language": 0.20,
-            "low_assurance_ssl": 0.25,
-            "no_ssl_detected": 0.40
+            "mismatched_form_action": 0.40,
+            "brand_impersonation_risk": 0.50,
+            "urgency_language": 0.25,
+            "low_assurance_ssl": 0.30,
+            "no_ssl_detected": 0.45
         }
         
         score = base_score
         for flag in red_flags:
-            score += weights.get(flag.flag_name, 0.10)
+            score += weights.get(flag.flag_name, 0.15)
     
     score = min(score, 1.0)
-    label = "phishing" if score >= 0.65 else "suspicious" if score >= 0.35 else "legitimate"
+    label = "phishing" if score >= 0.70 else "suspicious" if score >= 0.40 else "legitimate"
 
     # AI Report Generation
     prompt = (
@@ -183,7 +206,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         f"TARGET: {payload.domain} (Resolved IP: {ip_address})\n"
         f"INFRASTRUCTURE: {hosting_provider}\n"
         f"SSL STATUS: {ssl_info['issuer'] if ssl_info else 'NONE/INVALID'}\n"
-        f"TECH STACK & VERSIONS: {', '.join(payload.techStack) or 'Standard Web Server'}\n"
+        f"TECH STACK & VERSIONS: {', '.join(detected_tech) or 'Standard Web Server'}\n"
         f"CRITICAL RED FLAGS: {', '.join([f.description for f in red_flags]) or 'None identified'}\n"
         f"SECURITY COMPLIANCE: {', '.join([f.description for f in green_flags]) or 'Standard security posture'}\n\n"
         f"INSTRUCTIONS: Write a 5-sentence technical synthesis. Use advanced terminology (e.g., 'asymmetric attack surface', 'XSS mitigation', 'hosting topology', 'certificate transparency'). "
@@ -203,7 +226,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         pass
 
     if not explanation:
-        explanation = f"Analysis complete for {payload.domain}. Hosted on {hosting_provider}. IP identified as {ip_address}."
+        explanation = f"Analysis complete for {payload.domain}. Hosted on {hosting_provider}. IP identified as {ip_address}. Programming stack: {', '.join(detected_tech) or 'Unknown'}."
 
     # 5. Persist to Database for Dashboard (Only if a user exists)
     if target_user:
@@ -219,7 +242,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
                 "ip": ip_address,
                 "ssl_issuer": ssl_info['issuer'] if ssl_info else "None",
                 "ssl_expiry": ssl_info['expiry_days'] if ssl_info else 0,
-                "tech": payload.techStack,
+                "tech": detected_tech,
                 "meta": payload.metaMetadata
             }
         )
@@ -244,7 +267,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         "label": label,
         "score": score,
         "score_pct": int(score * 100),
-        "tech_stack": payload.techStack,
+        "tech_stack": detected_tech,
         "hosting": hosting_provider,
         "server_ip": ip_address,
         "red_flags": red_flags,

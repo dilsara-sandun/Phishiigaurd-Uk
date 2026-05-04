@@ -7,10 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --brand-50: #f0f9ff;
             --brand-500: #0ea5e9;
             --brand-600: #0284c7;
             --slate-50: #f8fafc;
+            --slate-950: #020617;
             --slate-900: #0f172a;
             --slate-800: #1e293b;
             --slate-700: #334155;
@@ -29,15 +29,18 @@
             font-family: 'Inter', sans-serif;
             width: 380px;
             margin: 0;
-            background-color: var(--slate-900);
+            background-color: var(--slate-950);
             color: white;
             overflow: hidden;
         }
 
         .container {
-            padding: 20px;
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 1) 100%);
-            min-height: 500px;
+            padding: 24px;
+            background: 
+                radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 60%),
+                radial-gradient(circle at bottom left, rgba(2, 132, 199, 0.1), transparent 60%),
+                var(--slate-950);
+            min-height: 520px;
             display: flex;
             flex-direction: column;
         }
@@ -47,40 +50,45 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .logo-circle {
-            width: 32px;
-            height: 32px;
-            background: var(--brand-600);
-            border-radius: 8px;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--brand-600), #0369a1);
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+            box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
         }
 
         .brand h1 {
             margin: 0;
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, #fff, var(--slate-400));
+            -webkit-background-clip: text;
+            color: transparent;
         }
 
         .badge {
             font-size: 10px;
-            padding: 2px 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            padding: 3px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
             color: var(--slate-400);
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.05em;
         }
 
         /* Hero Action */
@@ -92,94 +100,94 @@
 
         #analyzeBtn {
             width: 100%;
-            padding: 12px;
-            background: var(--brand-600);
+            padding: 14px;
+            background: linear-gradient(135deg, var(--brand-600), #0369a1);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            gap: 10px;
+            box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.4);
         }
 
         #analyzeBtn:hover {
-            background: var(--brand-500);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px -5px rgba(2, 132, 199, 0.5);
+            background: linear-gradient(135deg, var(--brand-500), var(--brand-600));
         }
 
         #analyzeBtn:active {
             transform: translateY(0);
         }
 
-        #analyzeBtn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         /* Scanning State */
         .loader-container {
             display: none;
-            padding: 40px 0;
+            padding: 60px 0;
             text-align: center;
         }
 
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid var(--brand-500);
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top: 4px solid var(--brand-500);
             border-radius: 50%;
-            margin: 0 auto 15px;
-            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+            animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .loading-text {
-            font-size: 13px;
+            font-size: 14px;
             color: var(--slate-400);
-            font-weight: 500;
+            font-weight: 600;
+            letter-spacing: 0.02em;
         }
 
         /* Result View */
         #resultView {
             display: none;
-            animation: fadeIn 0.3s ease-out;
+            animation: slideUp 0.4s cubic-bezier(0, 0, 0.2, 1);
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .status-banner {
-            padding: 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .status-banner.phishing { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
-        .status-banner.legitimate { background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.3); }
-        .status-banner.suspicious { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .status-banner.phishing { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .status-banner.legitimate { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); }
+        .status-banner.suspicious { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); }
 
         .status-label {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.1em;
         }
 
         .score-display {
             margin-left: auto;
             font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            font-size: 14px;
+            font-weight: 700;
+            font-size: 18px;
         }
 
         /* Technical Grid */
@@ -187,27 +195,34 @@
             display: grid;
             grid-template-cols: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .data-item {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 12px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .data-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .data-label {
-            font-size: 10px;
+            font-size: 9px;
             color: var(--slate-400);
             text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
         }
 
         .data-value {
-            font-size: 12px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             color: white;
             white-space: nowrap;
             overflow: hidden;
@@ -216,25 +231,27 @@
 
         /* AI Verdict Card */
         .verdict-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
         }
 
         .card-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 12px;
             color: var(--brand-500);
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .verdict-text {
-            font-size: 12.5px;
+            font-size: 13px;
             line-height: 1.6;
             color: var(--slate-400);
             font-style: italic;
@@ -243,39 +260,46 @@
         /* Flags */
         .flags-container {
             margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .flag {
             display: flex;
             align-items: flex-start;
-            gap: 10px;
-            font-size: 11px;
-            padding: 8px;
-            border-radius: 6px;
-            margin-bottom: 6px;
+            gap: 12px;
+            font-size: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            line-height: 1.4;
         }
 
-        .flag.red { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
-        .flag.green { background: rgba(34, 197, 94, 0.1); color: #86efac; }
+        .flag.red { background: rgba(239, 68, 68, 0.08); color: #fca5a5; border-left: 3px solid var(--phishing); }
+        .flag.green { background: rgba(34, 197, 94, 0.08); color: #86efac; border-left: 3px solid var(--legitimate); }
 
         /* Footer */
         .footer {
             margin-top: auto;
             text-align: center;
-            padding-top: 15px;
+            padding-top: 20px;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .dashboard-link {
             color: var(--brand-500);
             text-decoration: none;
-            font-size: 12px;
-            font-weight: 600;
-            transition: color 0.2s;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .dashboard-link:hover {
-            color: var(--brand-600);
+            color: white;
+            gap: 10px;
         }
     </style>
 </head>
@@ -319,29 +343,29 @@
                 <div class="data-grid">
                     <div class="data-item">
                         <div class="data-label">Infrastructure</div>
-                        <div class="data-value" id="hostingVal">Unknown</div>
+                        <div class="data-value" id="hostingVal">Scanning...</div>
                     </div>
                     <div class="data-item">
                         <div class="data-label">Server IP</div>
                         <div class="data-value" id="ipVal">0.0.0.0</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Technology</div>
-                        <div class="data-value" id="techVal">Standard</div>
+                        <div class="data-label">Deep Tech</div>
+                        <div class="data-value" id="techVal">Detecting...</div>
                     </div>
                     <div class="data-item">
-                        <div class="data-label">Security</div>
-                        <div class="data-value" id="secVal">Analyzed</div>
+                        <div class="data-label">Trust DNS</div>
+                        <div class="data-value" id="secVal">Verified</div>
                     </div>
                 </div>
 
                 <div class="verdict-card">
                     <div class="card-header">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14v-4m0-4h.01"/></svg>
-                        EXPERT SYSTEM REPORT
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 14v-4m0-4h.01"/></svg>
+                        AI INFRASTRUCTURE AUDIT
                     </div>
                     <div class="verdict-text" id="explanationText">
-                        Awaiting technical summary from core engine...
+                        Awaiting expert synthesis from core engine...
                     </div>
                 </div>
 
@@ -353,7 +377,8 @@
 
         <footer class="footer">
             <a href="http://localhost:5173/analyzer" target="_blank" class="dashboard-link">
-                Access Page Analyzer Feed →
+                Open Webpage Analysis Dashboard
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
         </footer>
     </div>

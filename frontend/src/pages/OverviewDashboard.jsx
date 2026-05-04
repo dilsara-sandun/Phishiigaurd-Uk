@@ -1,24 +1,30 @@
 import React, { useState, useEffect } from 'react'
-import { ShieldAlert, Globe2, Activity, Zap, Server, ShieldCheck, FileSearch } from 'lucide-react'
+import { ShieldAlert, Globe2, Activity, Zap, Server, ShieldCheck, FileSearch, ExternalLink, Globe, Clock } from 'lucide-react'
 import StatCard from '../components/StatCard'
 import RiskDonut from '../components/RiskDonut'
 import BrandsBar from '../components/BrandsBar'
 import NewsPanel from '../components/NewsPanel'
 import { getStats } from '@/services/statsService'
+import { getHistory } from '@/services/scanService'
 import { useNews } from '@/hooks/useNews'
 
 export default function OverviewDashboard() {
   const [stats, setStats] = useState(null)
+  const [pageScans, setPageScans] = useState([])
   const [loading, setLoading] = useState(true)
   const { news, loading: newsLoading } = useNews()
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const data = await getStats()
-        setStats(data)
+        const [statsData, historyData] = await Promise.all([
+          getStats(),
+          getHistory(5)
+        ])
+        setStats(statsData)
+        setPageScans(historyData.filter(s => s.scan_type === 'domain'))
       } catch (err) {
-        console.error('Failed to load stats')
+        console.error('Failed to load dashboard data')
       } finally {
         setLoading(false)
       }
@@ -221,6 +227,81 @@ export default function OverviewDashboard() {
                   </div>
                 </div>
              </div>
+          </div>
+
+          {/* Webpage Analysis Feed Card */}
+          <div className="glass-card p-6 2xl:p-8 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-70 group-hover:opacity-100 transition-opacity"></div>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="section-title flex items-center gap-3 text-xl 2xl:text-3xl text-black">
+                  <Globe className="text-emerald-600 w-6 h-6 2xl:w-8 2xl:h-8" /> Live Webpage Analysis Feed
+                </h3>
+                <p className="text-sm 2xl:text-base text-slate-600 mt-2 font-medium">Real-time technical deep-dives from browser extensions</p>
+              </div>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Monitoring</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {pageScans.length > 0 ? (
+                pageScans.slice(0, 2).map((scan) => (
+                  <div key={scan.id} className="p-5 bg-white rounded-2xl border border-slate-200 hover:border-emerald-500/30 transition-all shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-black truncate">{new URL(scan.input_value).hostname}</h4>
+                        <p className="text-[10px] text-slate-500 font-mono mt-1 flex items-center gap-1">
+                           <Clock size={10} /> {new Date(scan.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ${
+                        scan.label === 'phishing' ? 'bg-danger-500/20 text-danger-600' :
+                        scan.label === 'legitimate' ? 'bg-safe-500/20 text-safe-600' :
+                        'bg-warn-500/20 text-warn-600'
+                      }`}>
+                        {scan.label}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <p className="text-[8px] text-slate-500 font-bold uppercase">Hosting</p>
+                        <p className="text-[10px] font-bold text-black truncate">{scan.feature_values?.hosting || 'Unknown'}</p>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <p className="text-[8px] text-slate-500 font-bold uppercase">Server IP</p>
+                        <p className="text-[10px] font-bold text-black truncate">{scan.feature_values?.ip || '0.0.0.0'}</p>
+                      </div>
+                      <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                        <p className="text-[8px] text-slate-500 font-bold uppercase">SSL Issuer</p>
+                        <p className="text-[10px] font-bold text-black truncate">{scan.feature_values?.ssl_issuer?.split(' ')[0] || 'None'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1">
+                      {(scan.feature_values?.tech || []).slice(0, 3).map((t, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded border border-slate-200">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                   <Globe className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                   <p className="text-sm text-slate-500">No recent webpage scans detected.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-6 text-center">
+               <a href="/analyzer" className="inline-flex items-center gap-2 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest">
+                  View Full Page Analyzer <ExternalLink size={14} />
+               </a>
+            </div>
           </div>
         </div>
 

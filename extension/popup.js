@@ -95,13 +95,17 @@ function renderResults(result) {
   }
 
   // 3. Set Technical Grid
-  hostingVal.textContent = result.hosting || 'Proprietary';
+  hostingVal.textContent = result.hosting || 'Cloud Hosted';
   ipVal.textContent = result.server_ip || 'Hidden/Proxy';
-  techVal.textContent = result.tech_stack.length > 0 ? result.tech_stack[0] : 'Standard';
   
-  const hasSecurity = result.green_flags.some(f => f.flag_name === 'security_policy_present');
-  secVal.textContent = hasSecurity ? 'Strict' : 'Standard';
-  secVal.style.color = hasSecurity ? '#22c55e' : '#94a3b8';
+  // Display primary tech or standard
+  const tech = result.tech_stack || [];
+  techVal.textContent = tech.length > 0 ? tech[0] : 'Standard Web';
+  
+  // DNS/Security logic
+  const hasSecurity = result.green_flags.some(f => f.flag_name === 'valid_ssl_certificate');
+  secVal.textContent = hasSecurity ? 'Verified SSL' : 'Insecure';
+  secVal.style.color = hasSecurity ? '#22c55e' : '#ef4444';
 
   // 4. Set Explanation
   explanationText.textContent = result.explanation;
