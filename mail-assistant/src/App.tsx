@@ -46,8 +46,8 @@ interface EmailMeta {
 }
 
 // ─── Config ──────────────────────────────────────────────────────────────────
-
-const API = 'http://localhost:8000/api/extension/mail-analyse';
+// Using a relative path so Vite's proxy forwards it correctly (HTTPS→HTTP)
+const API = '/api/extension/mail-analyse';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

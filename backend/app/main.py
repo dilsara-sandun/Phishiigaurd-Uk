@@ -159,9 +159,20 @@ def create_app() -> FastAPI:
     application.add_middleware(SlowAPIMiddleware)
 
     # ── CORS ─────────────────────────────────────────────────────────────────
+    # Includes https://localhost:3000 for the Outlook mail-assistant task pane
+    # (mkcert generates a self-signed cert so Vite serves on HTTPS)
+    _cors_origins = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "https://localhost:3000",
+        "https://localhost:3001",
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=_cors_origins,
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
