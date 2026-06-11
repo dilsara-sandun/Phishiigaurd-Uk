@@ -5,8 +5,8 @@ Core ML inference service.
 
 Responsibilities:
   1. Load the XGBoost model, SHAP explainer, and feature names at startup.
-  2. Extract 26+ lexical, structural, and UK-banking-specific features from a
-     raw URL string.
+  2. Extract 26+ lexical, structural, and universal brand-specific features
+     from a raw URL string.
   3. Run predict_proba() to get a phishing probability score.
   4. Apply SHAP to produce per-feature contribution values for explainability.
   5. Derive red/green flags from feature values for display in the UI.
@@ -17,6 +17,7 @@ import logging
 import math
 import os
 import re
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -29,34 +30,217 @@ from app.schemas.scan_schema import FlagItem
 
 logger = logging.getLogger(__name__)
 
-# ── UK bank brand tokens ──────────────────────────────────────────────────────
-UK_BANK_BRANDS: set[str] = {
-    "lloyds", "lloydsbank", "natwest", "barclays", "hsbc", "santander",
-    "nationwide", "halifax", "monzo", "starling", "revolut", "firstdirect",
-    "metro", "tsb", "rbs", "royalbankofscotland", "co-operative", "cooperativebank",
-    "virginmoney", "yorkshire", "bank", "banking",
+# ── Universal known brand tokens (impersonated in phishing globally) ───────────
+# These are lowercase tokens that appear in URLs/domains when attackers
+# impersonate well-known brands. They span tech, banking, delivery, government,
+# finance, telecom, and retail sectors.
+
+KNOWN_BRANDS: set[str] = {
+    # Big Tech / Cloud / Social
+    "google", "gmail", "youtube", "googlemail",
+    "microsoft", "outlook", "office", "microsoft365", "onedrive", "azure", "teams",
+    "apple", "icloud", "appleid",
+    "amazon", "aws", "amazonprime",
+    "facebook", "meta", "instagram", "whatsapp", "messenger",
+    "twitter", "x",
+    "linkedin",
+    "netflix",
+    "paypal",
+    "ebay",
+    "dropbox",
+    "adobe",
+    "zoom",
+    "docusign",
+    "slack",
+    "github",
+    "notion",
+    "shopify",
+    # UK Banks
+    "lloyds", "lloydsbank",
+    "natwest",
+    "barclays",
+    "hsbc",
+    "santander",
+    "nationwide",
+    "halifax",
+    "monzo",
+    "starling", "starlingbank",
+    "revolut",
+    "firstdirect",
+    "metrobank",
+    "tsb",
+    "rbs", "royalbankofscotland",
+    "cooperativebank",
+    "virginmoney",
+    "yorkshirebank", "ybs",
+    "ulsterbank",
+    # Other International Banks
+    "chase", "citibank", "citi", "wellsfargo", "bankofamerica", "boa",
+    "deutschebank", "bnpparibas", "creditsuisse", "ubs", "ing", "abnamro",
+    # Delivery / Logistics
+    "dhl",
+    "fedex",
+    "royalmail",
+    "hermes",
+    "dpd",
+    "ups",
+    "parcelforce",
+    "evri",
+    "yodel",
+    "tnt",
+    # UK Government / Public Services
+    "hmrc",
+    "dvla",
+    "dvsa",
+    "nhs",
+    "gov",
+    "tvlicensing", "tvlicence",
+    "dwp",
+    "companieshouse",
+    "actionfraud",
+    # Finance / Payment
+    "visa",
+    "mastercard",
+    "amex", "americanexpress",
+    "westernunion",
+    "moneygram",
+    "transferwise", "wise",
+    "stripe",
+    "klarna",
+    "clearpay",
+    "cryptodotcom",
+    "coinbase",
+    "binance",
+    # UK Telecom / Utilities
+    "bt", "openreach",
+    "sky",
+    "virginmedia",
+    "o2",
+    "ee",
+    "vodafone",
+    "threemobile",
+    "talktalk",
+    "plusnet",
+    "edf", "britishgas", "octopusenergy", "eon",
+    # Retail / Other
+    "argos",
+    "asda",
+    "tesco",
+    "sainsburys",
+    "next",
+    "marks", "marksandspencer",
+    "currys",
+    "boots",
+    "npower",
+    "sportsdirect",
 }
 
-# Official UK bank registrable domains (base domain only)
-LEGITIMATE_BANK_DOMAINS: set[str] = {
-    "lloydsbank.co.uk", "lloydsbank.com", "natwest.com", "barclays.co.uk", "hsbc.co.uk",
-    "santander.co.uk", "nationwide.co.uk", "halifax.co.uk", "monzo.com",
-    "starlingbank.com", "revolut.com", "firstdirect.com", "metrobankonline.co.uk",
-    "tsb.co.uk", "rbs.co.uk", "co-operativebank.co.uk", "virginmoney.com",
-    "ybs.co.uk", "ulsterbank.co.uk",
+# Mapping of brand token → official registered domain(s)
+# Used for brand-vs-domain mismatch detection
+KNOWN_LEGITIMATE_DOMAINS: dict[str, set[str]] = {
+    "google":           {"google.com", "google.co.uk", "gmail.com", "googlemail.com", "googleapis.com"},
+    "gmail":            {"gmail.com", "googlemail.com"},
+    "youtube":          {"youtube.com"},
+    "microsoft":        {"microsoft.com", "live.com", "outlook.com", "office.com", "microsoftonline.com",
+                         "office365.com", "windows.com", "azure.com", "hotmail.com"},
+    "outlook":          {"outlook.com", "live.com", "hotmail.com"},
+    "apple":            {"apple.com", "icloud.com"},
+    "icloud":           {"icloud.com"},
+    "amazon":           {"amazon.co.uk", "amazon.com", "aws.amazon.com", "amazontrust.com"},
+    "aws":              {"aws.amazon.com", "amazonaws.com"},
+    "facebook":         {"facebook.com", "fb.com", "messenger.com"},
+    "instagram":        {"instagram.com"},
+    "whatsapp":         {"whatsapp.com"},
+    "twitter":          {"twitter.com", "x.com"},
+    "linkedin":         {"linkedin.com"},
+    "netflix":          {"netflix.com"},
+    "paypal":           {"paypal.com", "paypal.me"},
+    "ebay":             {"ebay.co.uk", "ebay.com"},
+    "dropbox":          {"dropbox.com"},
+    "adobe":            {"adobe.com"},
+    "zoom":             {"zoom.us", "zoom.com"},
+    "docusign":         {"docusign.com", "docusign.net"},
+    "slack":            {"slack.com"},
+    "github":           {"github.com", "github.io", "githubusercontent.com"},
+    "lloyds":           {"lloydsbank.co.uk", "lloydsbank.com"},
+    "lloydsbank":       {"lloydsbank.co.uk", "lloydsbank.com"},
+    "natwest":          {"natwest.com"},
+    "barclays":         {"barclays.co.uk", "barclays.com"},
+    "hsbc":             {"hsbc.co.uk", "hsbc.com"},
+    "santander":        {"santander.co.uk"},
+    "nationwide":       {"nationwide.co.uk"},
+    "halifax":          {"halifax.co.uk"},
+    "monzo":            {"monzo.com"},
+    "starling":         {"starlingbank.com"},
+    "starlingbank":     {"starlingbank.com"},
+    "revolut":          {"revolut.com"},
+    "firstdirect":      {"firstdirect.com"},
+    "metrobank":        {"metrobankonline.co.uk"},
+    "tsb":              {"tsb.co.uk"},
+    "rbs":              {"rbs.co.uk"},
+    "cooperativebank":  {"co-operativebank.co.uk"},
+    "virginmoney":      {"virginmoney.com"},
+    "ybs":              {"ybs.co.uk"},
+    "ulsterbank":       {"ulsterbank.co.uk"},
+    "chase":            {"chase.com"},
+    "citibank":         {"citibank.com", "citi.com"},
+    "wellsfargo":       {"wellsfargo.com"},
+    "bankofamerica":    {"bankofamerica.com"},
+    "dhl":              {"dhl.com", "dhl.co.uk"},
+    "fedex":            {"fedex.com"},
+    "royalmail":        {"royalmail.com"},
+    "hermes":           {"myhermes.co.uk", "evri.com"},
+    "dpd":              {"dpd.co.uk", "dpd.com"},
+    "ups":              {"ups.com"},
+    "parcelforce":      {"parcelforce.com"},
+    "evri":             {"evri.com"},
+    "hmrc":             {"hmrc.gov.uk", "gov.uk"},
+    "dvla":             {"dvla.gov.uk", "gov.uk"},
+    "dvsa":             {"dvsa.gov.uk", "gov.uk"},
+    "nhs":              {"nhs.uk", "nhs.net"},
+    "gov":              {"gov.uk"},
+    "tvlicensing":      {"tvlicensing.co.uk"},
+    "dwp":              {"dwp.gov.uk", "gov.uk"},
+    "visa":             {"visa.com", "visa.co.uk"},
+    "mastercard":       {"mastercard.com"},
+    "amex":             {"americanexpress.com"},
+    "americanexpress":  {"americanexpress.com"},
+    "westernunion":     {"westernunion.com"},
+    "transferwise":     {"transferwise.com", "wise.com"},
+    "wise":             {"wise.com"},
+    "stripe":           {"stripe.com"},
+    "klarna":           {"klarna.com"},
+    "coinbase":         {"coinbase.com"},
+    "binance":          {"binance.com"},
+    "bt":               {"bt.com"},
+    "sky":              {"sky.com"},
+    "virginmedia":      {"virginmedia.com"},
+    "o2":               {"o2.co.uk"},
+    "ee":               {"ee.co.uk"},
+    "vodafone":         {"vodafone.co.uk"},
+    "talktalk":         {"talktalk.co.uk"},
 }
 
-# TLDs that are extremely rarely used by legitimate UK banks
+# TLDs that are very rarely used by any legitimate brand or organisation
 SUSPICIOUS_TLDS: set[str] = {
     "top", "xyz", "site", "online", "click", "live", "info", "biz",
     "work", "rest", "pw", "gq", "ml", "cf", "ga", "tk", "ru", "cn",
-    "cc", "icu", "world", "space",
+    "cc", "icu", "world", "space", "vip", "shop", "store", "club",
+    "fun", "wtf", "link", "cyou", "fit", "buzz", "zip", "mov",
 }
 
+# Countries whose hosting is a strong phishing signal (high-risk jurisdictions)
+HIGH_RISK_COUNTRIES: set[str] = {
+    "China", "Russia", "North Korea", "Iran", "Nigeria",
+    "CN", "RU", "KP", "IR", "NG",
+}
+
+# Path keywords associated with credential harvesting
 SUSPICIOUS_PATH_KEYWORDS: set[str] = {
-    "login", "signin", "verify", "secure", "account", "banking",
+    "login", "signin", "sign-in", "verify", "secure", "account", "banking",
     "update", "confirm", "suspend", "reactivate", "onlinebanking",
-    "webscr", "password", "credential",
+    "webscr", "password", "credential", "validate", "authentication",
+    "reset", "recover", "unlock", "authorize", "authorise",
 }
 
 
@@ -64,16 +248,51 @@ def _char_entropy(s: str) -> float:
     """Shannon entropy of the character distribution in *s*."""
     if not s:
         return 0.0
-    freq = {}
+    freq: dict[str, int] = {}
     for c in s:
         freq[c] = freq.get(c, 0) + 1
     n = len(s)
     return -sum((v / n) * math.log2(v / n) for v in freq.values())
 
 
+def _contains_homograph(domain: str) -> bool:
+    """
+    Detect if a domain contains non-ASCII Unicode characters that visually
+    resemble ASCII letters (homograph / IDN homograph attack).
+    e.g. pаypal.com where 'а' is Cyrillic U+0430 not Latin 'a'.
+    """
+    try:
+        domain.encode("ascii")
+        return False  # purely ASCII, no homograph
+    except UnicodeEncodeError:
+        pass
+    # Check each character's Unicode category; Latin letters are 'Ll', 'Lu'
+    # Non-ASCII letters that look like ASCII are the threat
+    for ch in domain:
+        if ord(ch) > 127:
+            name = unicodedata.name(ch, "")
+            # Confusable scripts: Cyrillic, Greek, Armenian, etc.
+            if any(script in name for script in ["CYRILLIC", "GREEK", "ARMENIAN", "ARABIC"]):
+                return True
+    return False
+
+
+def _brand_domain_mismatch(url_lower: str, registered_domain: str) -> tuple[bool, str]:
+    """
+    Check if any known brand token appears in the URL but the registrable
+    domain is not the brand's legitimate domain.
+    Returns (is_mismatch, matched_brand).
+    """
+    for brand, legit_domains in KNOWN_LEGITIMATE_DOMAINS.items():
+        if brand in url_lower:
+            if registered_domain not in legit_domains:
+                return True, brand
+    return False, ""
+
+
 def extract_features(url: str) -> dict[str, float]:
     """
-    Extract all 26 features from *url* as a flat dict of feature_name -> value.
+    Extract all features from *url* as a flat dict of feature_name -> value.
     All values are floats (0/1 for boolean features).
     """
     url = url.strip()
@@ -127,21 +346,22 @@ def extract_features(url: str) -> dict[str, float]:
     f["is_suspicious_tld"] = float(tld in SUSPICIOUS_TLDS)
     f["is_com_tld"] = float(tld == "com")
 
-    # ── UK banking-specific features ──────────────────────────────────────────
+    # ── Universal brand-specific features ─────────────────────────────────────
     url_lower = url.lower()
 
-    # Does the URL contain a known UK bank brand token?
-    found_brands = [b for b in UK_BANK_BRANDS if b in url_lower]
-    f["contains_bank_brand"] = float(len(found_brands) > 0)
+    # Does the URL contain any known global brand token?
+    found_brands = [b for b in KNOWN_BRANDS if b in url_lower]
+    f["contains_brand"] = float(len(found_brands) > 0)
     f["brand_count"] = float(len(found_brands))
 
-    # Brand-vs-domain mismatch: brand token appears in URL but
-    # the registrable domain is NOT a legitimate bank domain.
-    has_brand = len(found_brands) > 0
-    is_legit_domain = registered_domain in LEGITIMATE_BANK_DOMAINS
-    f["brand_domain_mismatch"] = float(has_brand and not is_legit_domain)
+    # Brand-vs-domain mismatch
+    mismatch, _ = _brand_domain_mismatch(url_lower, registered_domain)
+    f["brand_domain_mismatch"] = float(mismatch)
 
-    # Suspicious login / authentication keywords in path
+    # Homograph / IDN attack
+    f["homograph_domain"] = float(_contains_homograph(fqdn or registered_domain))
+
+    # Suspicious login/auth keywords in path
     f["suspicious_path_keyword"] = float(
         any(kw in path_part.lower() for kw in SUSPICIOUS_PATH_KEYWORDS)
     )
@@ -165,64 +385,82 @@ def _build_flags(features: dict[str, float], score: float) -> tuple[list[FlagIte
     if features.get("brand_domain_mismatch", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="brand_domain_mismatch",
-            description="Contains a UK bank brand token but the domain is not the bank's official domain",
+            description=(
+                "URL contains a well-known brand name but the domain is not "
+                "that organisation's official website — a common phishing technique."
+            ),
+        ))
+    if features.get("homograph_domain", 0):
+        red.append(FlagItem(
+            flag_type="red", flag_name="homograph_domain",
+            description=(
+                "Domain contains Unicode characters that visually resemble "
+                "standard letters (IDN homograph attack)."
+            ),
         ))
     if features.get("is_suspicious_tld", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="suspicious_tld",
-            description="Top-level domain is rarely used by legitimate UK banks",
+            description=(
+                "This top-level domain is rarely used by legitimate organisations "
+                "and is frequently registered for phishing campaigns."
+            ),
         ))
     if features.get("suspicious_path_keyword", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="suspicious_path_keyword",
-            description="URL path contains login/verify/secure keywords typical of credential harvesting",
+            description="URL path contains login/verify/secure keywords typical of credential harvesting pages.",
         ))
     if features.get("ip_address_present", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="ip_address_in_domain",
-            description="Domain uses a raw IP address instead of a hostname",
+            description="Domain uses a raw IP address instead of a hostname — no legitimate service does this.",
         ))
     if features.get("at_sign_present", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="at_sign_present",
-            description="@ symbol in URL can redirect browsers to a different host",
+            description="@ symbol in URL can trick browsers into redirecting to a different host.",
         ))
     if features.get("double_slash_in_path", 0):
         red.append(FlagItem(
             flag_type="red", flag_name="double_slash_in_path",
-            description="Double slash in path may indicate URL obfuscation",
+            description="Double slash in URL path may indicate URL obfuscation or redirect abuse.",
         ))
     if features.get("subdomain_count", 0) >= 3:
         red.append(FlagItem(
             flag_type="red", flag_name="excessive_subdomains",
-            description=f"URL has {int(features['subdomain_count'])} subdomain levels — legitimate banks rarely use more than 2",
+            description=(
+                f"URL has {int(features['subdomain_count'])} subdomain levels — "
+                "attackers add subdomains to make a malicious domain look legitimate "
+                "(e.g. secure.login.paypal.attacker.com)."
+            ),
         ))
     if features.get("url_entropy", 0) > 4.2:
         red.append(FlagItem(
             flag_type="red", flag_name="high_entropy",
-            description="URL contains an unusually random character distribution, common in generated phishing domains",
+            description="URL contains an unusually random character distribution, common in algorithmically generated phishing domains.",
         ))
     if features.get("url_length", 0) > 150:
         red.append(FlagItem(
             flag_type="red", flag_name="very_long_url",
-            description="URL is abnormally long, which can hide the real destination",
+            description="URL is abnormally long, which is often used to hide the real destination.",
         ))
 
     # Green flags
     if features.get("has_https", 0):
         green.append(FlagItem(
             flag_type="green", flag_name="https_present",
-            description="Connection uses HTTPS encryption",
+            description="Connection uses HTTPS encryption.",
         ))
     if features.get("is_uk_tld", 0) and not features.get("brand_domain_mismatch", 0):
         green.append(FlagItem(
             flag_type="green", flag_name="uk_tld",
-            description="Domain uses a .co.uk or .uk top-level domain",
+            description="Domain uses a .co.uk or .uk top-level domain.",
         ))
     if score < 0.20:
         green.append(FlagItem(
             flag_type="green", flag_name="low_phishing_probability",
-            description="Model assigns a very low phishing probability to this URL",
+            description="Model assigns a very low phishing probability to this URL.",
         ))
 
     return red, green
@@ -264,13 +502,13 @@ def load_models() -> None:
             logger.info("XGBoost model loaded from %s", xgb_path)
             _state.loaded = True
         else:
-            logger.warning("XGBoost model file is empty or missing at %s. Using heuristic fallback.", xgb_path)
+            logger.warning("XGBoost model file is empty at %s. Using heuristic fallback.", xgb_path)
 
         if shap_path.exists() and shap_path.stat().st_size > 0:
             _state.shap_explainer = joblib.load(shap_path)
             logger.info("SHAP explainer loaded from %s", shap_path)
         else:
-            logger.warning("SHAP explainer missing or empty at %s — explanations will be unavailable", shap_path)
+            logger.warning("SHAP explainer missing at %s — explanations unavailable", shap_path)
 
         if feat_path.exists():
             with open(feat_path) as fh:
@@ -292,7 +530,6 @@ def predict_url(url: str) -> dict:
     features = extract_features(url)
 
     if not _state.loaded or _state.model is None:
-        # Fallback: derive a heuristic score from feature values
         rule_score = _heuristic_score(features)
         label = _score_to_label(rule_score)
         red_flags, green_flags = _build_flags(features, rule_score)
@@ -324,7 +561,6 @@ def predict_url(url: str) -> dict:
     if _state.shap_explainer is not None:
         try:
             sv = _state.shap_explainer.shap_values(feature_vector)
-            # For binary classification, sv is shape (1, n_features)
             raw = sv[0] if isinstance(sv, list) else sv[0]
             names = _state.feature_names or list(features.keys())
             shap_values = {n: round(float(v), 6) for n, v in zip(names, raw)}
@@ -347,16 +583,17 @@ def predict_url(url: str) -> dict:
 
 def _heuristic_score(f: dict[str, float]) -> float:
     """
-    Simple weighted rule-based score used when the model file is absent.
+    Weighted rule-based score used when the model file is absent.
     Returns a float in [0, 1].
     """
     score = 0.0
-    if f.get("brand_domain_mismatch"):  score += 0.45
-    if f.get("is_suspicious_tld"):     score += 0.25
-    if f.get("suspicious_path_keyword"): score += 0.15
-    if f.get("ip_address_present"):    score += 0.20
-    if f.get("at_sign_present"):       score += 0.15
-    if f.get("subdomain_count", 0) > 3: score += 0.10
-    if f.get("url_entropy", 0) > 4.5:  score += 0.10
-    if not f.get("has_https"):          score += 0.05
+    if f.get("brand_domain_mismatch"):    score += 0.45
+    if f.get("homograph_domain"):         score += 0.40
+    if f.get("is_suspicious_tld"):        score += 0.25
+    if f.get("suspicious_path_keyword"):  score += 0.15
+    if f.get("ip_address_present"):       score += 0.20
+    if f.get("at_sign_present"):          score += 0.15
+    if f.get("subdomain_count", 0) > 3:   score += 0.10
+    if f.get("url_entropy", 0) > 4.5:     score += 0.10
+    if not f.get("has_https"):            score += 0.05
     return min(score, 1.0)

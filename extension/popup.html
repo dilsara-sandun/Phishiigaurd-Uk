@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PhishGuard UK - Enterprise Analyzer</title>
+    <title>PhishGuard - AI Phishing Protection</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -278,7 +278,74 @@
         .flag.red { background: rgba(239, 68, 68, 0.08); color: #fca5a5; border-left: 3px solid var(--phishing); }
         .flag.green { background: rgba(34, 197, 94, 0.08); color: #86efac; border-left: 3px solid var(--legitimate); }
 
-        /* Footer */
+        .gmail-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .gmail-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #4ade80;
+        }
+        #gmailAnalyzeBtn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 20px -4px rgba(22,163,74,0.35);
+        }
+        #gmailAnalyzeBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -4px rgba(22,163,74,0.45);
+        }
+        #gmailLoader { display:none; text-align:center; padding:20px 0; }
+        #gmailResults { display:none; }
+        #gmailError {
+            display:none;
+            background:rgba(239,68,68,0.1);
+            border:1px solid rgba(239,68,68,0.3);
+            border-radius:10px;
+            padding:10px 14px;
+            font-size:12px;
+            color:#fca5a5;
+            margin-top:10px;
+        }
+        .gmail-section-label {
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin: 12px 0 6px;
+        }
+        #gmailExplanation {
+            font-size:12px;
+            color:#94a3b8;
+            line-height:1.5;
+            font-style:italic;
+            margin-bottom:10px;
+            padding:10px 12px;
+            background:rgba(255,255,255,0.03);
+            border-radius:8px;
+            border:1px solid rgba(255,255,255,0.06);
+        }
         .footer {
             margin-top: auto;
             text-align: center;
@@ -319,7 +386,7 @@
             <div id="initialView">
                 <div class="hero">
                     <p style="font-size: 13px; color: var(--slate-400); margin-bottom: 24px;">
-                        Enterprise-grade heuristic & AI analysis for UK retail banking security.
+                        AI-powered phishing protection for websites &amp; emails.
                     </p>
                     <button id="analyzeBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -373,11 +440,51 @@
                     <!-- Flags injected here -->
                 </div>
             </div>
+
+            <!-- ── Gmail Email Analysis Section ── -->
+            <div id="gmailSection" class="gmail-section" style="display:none;">
+                <div class="gmail-header">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    Gmail Email Detected
+                </div>
+
+                <div id="gmailInitial">
+                    <button id="gmailAnalyzeBtn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        📧 Analyze This Email
+                    </button>
+                </div>
+
+                <div id="gmailLoader">
+                    <div class="spinner" style="width:32px;height:32px;margin:0 auto 10px;"></div>
+                    <div class="loading-text" style="font-size:12px;">Reading email &amp; scanning...</div>
+                </div>
+
+                <div id="gmailError"></div>
+
+                <div id="gmailResults">
+                    <!-- Verdict injected by popup.js -->
+                    <div id="gmailVerdict"></div>
+
+                    <div class="gmail-section-label">🤖 AI Analysis</div>
+                    <div id="gmailExplanation"></div>
+
+                    <div class="gmail-section-label">Indicators</div>
+                    <div id="gmailFlags" class="flags-container"></div>
+
+                    <!-- Attachment risk cards injected by popup.js -->
+                    <div id="gmailAttachments" style="margin-top:10px;"></div>
+
+                    <!-- URL list injected by popup.js -->
+                    <div id="gmailUrls" style="margin-top:10px;"></div>
+                </div>
+            </div>
+
         </main>
 
         <footer class="footer">
             <a href="http://localhost:5173/analyzer" target="_blank" class="dashboard-link">
-                Open Webpage Analysis Dashboard
+                Open Web Dashboard
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
             </a>
         </footer>

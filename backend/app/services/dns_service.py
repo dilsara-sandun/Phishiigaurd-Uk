@@ -3,7 +3,10 @@ services/dns_service.py
 ───────────────────────
 Performs DNS lookups (dnspython), WHOIS queries (python-whois), and Geo-IP
 lookups (ip-api.com free tier) for a given domain.  Combines the results
-into a structured DNSInfo response and a domain risk score.
+into a structured DNSInfo response and a universal domain risk score.
+
+Domain checks are brand-agnostic and cover phishing from any sector —
+not limited to UK banking.
 """
 
 import logging
@@ -19,6 +22,50 @@ from app.config import settings
 from app.schemas.scan_schema import DNSInfo, FlagItem
 
 logger = logging.getLogger(__name__)
+
+
+# ── Typosquat detection ────────────────────────────────────────────────────────
+
+def _levenshtein(a: str, b: str) -> int:
+    """Compute Levenshtein edit distance between two strings."""
+    if len(a) < len(b):
+        return _levenshtein(b, a)
+    if not b:
+        return len(a)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a):
+        curr = [i + 1]
+        for j, cb in enumerate(b):
+            curr.append(min(prev[j + 1] + 1, curr[j] + 1, prev[j] + (ca != cb)))
+        prev = curr
+    return prev[-1]
+
+
+def _detect_typosquat(domain: str, brand_names: set[str]) -> tuple[bool, str]:
+    """
+    Check if *domain* is a typosquat of any known brand.
+    Returns (is_typosquat, matched_brand).
+    Only considers brands of 5+ characters to avoid false positives on short tokens.
+    """
+    import tldextract
+    ext = tldextract.extract(domain)
+    # Only use the registered domain name part (without TLD)
+    domain_stem = ext.domain.lower() if ext.domain else ""
+    if not domain_stem or len(domain_stem) < 4:
+        return False, ""
+
+    for brand in brand_names:
+        if len(brand) < 5:
+            continue  # skip very short tokens to reduce false positives
+        # Exact match means it's likely a legitimate domain already handled elsewhere
+        if brand == domain_stem:
+            continue
+        # Distance ≤ 2 on stems of similar length is a strong typosquat signal
+        if abs(len(brand) - len(domain_stem)) <= 3:
+            dist = _levenshtein(brand, domain_stem)
+            if dist <= 2:
+                return True, brand
+    return False, ""
 
 
 # ── DNS lookups ────────────────────────────────────────────────────────────────
@@ -144,13 +191,20 @@ async def get_ssl_issuer(domain: str) -> str | None:
 
 # ── Risk flags ─────────────────────────────────────────────────────────────────
 
+# Countries whose hosting jurisdiction is a strong phishing signal
+_HIGH_RISK_COUNTRIES: frozenset[str] = frozenset({
+    "China", "Russia", "North Korea", "Iran", "Nigeria",
+    "CN", "RU", "KP", "IR", "NG",
+})
+
+
 def _build_domain_flags(
     domain: str,
     dns_info: DNSInfo,
 ) -> tuple[list[FlagItem], list[FlagItem]]:
     from app.services.ml_service import (
-        UK_BANK_BRANDS,
-        LEGITIMATE_BANK_DOMAINS,
+        KNOWN_BRANDS,
+        KNOWN_LEGITIMATE_DOMAINS,
         SUSPICIOUS_TLDS,
     )
     import tldextract
@@ -163,62 +217,80 @@ def _build_domain_flags(
     reg_domain = ext.registered_domain.lower() if ext.registered_domain else ""
     domain_lower = domain.lower()
 
-    # Domain age
+    # ── Domain age ────────────────────────────────────────────────────────────
     if dns_info.domain_age_days is not None and dns_info.domain_age_days < 30:
         red.append(FlagItem(
             flag_type="red", flag_name="very_new_domain",
-            description=f"Domain registered only {dns_info.domain_age_days} days ago",
+            description=f"Domain was registered only {dns_info.domain_age_days} days ago — newly created domains are a strong phishing indicator.",
         ))
     elif dns_info.domain_age_days is not None and dns_info.domain_age_days < 90:
         red.append(FlagItem(
             flag_type="red", flag_name="new_domain",
-            description=f"Domain is relatively new ({dns_info.domain_age_days} days old)",
+            description=f"Domain is relatively new ({dns_info.domain_age_days} days old). Phishing domains are typically registered shortly before a campaign.",
         ))
 
-    # No MX records (not a real organisation)
+    # ── No MX records ─────────────────────────────────────────────────────────
     if not dns_info.has_mx:
         red.append(FlagItem(
             flag_type="red", flag_name="no_mx_records",
-            description="Domain has no mail exchange records, suggesting it is not a real organisation",
+            description="Sender domain has no mail exchange (MX) records, indicating it is not configured as a real email-sending organisation.",
         ))
 
-    # Brand mismatch
-    found_brands = [b for b in UK_BANK_BRANDS if b in domain_lower]
-    if found_brands and reg_domain not in LEGITIMATE_BANK_DOMAINS:
-        red.append(FlagItem(
-            flag_type="red", flag_name="brand_domain_mismatch",
-            description=f"Domain contains bank brand token(s) {found_brands} but is not the official bank domain",
-        ))
+    # ── Universal brand mismatch ───────────────────────────────────────────────
+    for brand, legit_domains in KNOWN_LEGITIMATE_DOMAINS.items():
+        if brand in domain_lower and reg_domain not in legit_domains:
+            red.append(FlagItem(
+                flag_type="red", flag_name="brand_domain_mismatch",
+                description=(
+                    f"Domain contains the brand token '{brand}' but '{reg_domain}' "
+                    f"is not that organisation's official domain."
+                ),
+            ))
+            break  # one flag is enough per domain
 
-    # Suspicious TLD
+    # ── Suspicious TLD ────────────────────────────────────────────────────────
     if tld in SUSPICIOUS_TLDS:
         red.append(FlagItem(
             flag_type="red", flag_name="suspicious_tld",
-            description=f".{tld} is rarely used by legitimate UK financial institutions",
+            description=f".{tld} is a top-level domain frequently registered for phishing and rarely used by legitimate organisations.",
         ))
 
-    # Hosted outside UK
-    if dns_info.geo_ip_country and dns_info.geo_ip_country not in ("United Kingdom", "GB"):
+    # ── High-risk hosting jurisdiction (replaces UK-only bias) ────────────────
+    if dns_info.geo_ip_country and dns_info.geo_ip_country in _HIGH_RISK_COUNTRIES:
         red.append(FlagItem(
-            flag_type="red", flag_name="hosted_outside_uk",
-            description=f"Domain is hosted in {dns_info.geo_ip_country}, not the United Kingdom",
+            flag_type="red", flag_name="high_risk_hosting_country",
+            description=(
+                f"Domain is hosted in {dns_info.geo_ip_country}, a jurisdiction associated "
+                "with a high volume of phishing and cybercrime infrastructure."
+            ),
         ))
 
-    # Green flags
+    # ── Typosquat detection ───────────────────────────────────────────────────
+    is_typosquat, matched_brand = _detect_typosquat(domain, KNOWN_BRANDS)
+    if is_typosquat:
+        red.append(FlagItem(
+            flag_type="red", flag_name="typosquat_domain",
+            description=(
+                f"Domain '{reg_domain}' closely resembles '{matched_brand}' — "
+                "this may be a typosquatting domain designed to impersonate a legitimate brand."
+            ),
+        ))
+
+    # ── Green flags ───────────────────────────────────────────────────────────
     if dns_info.ssl_issuer:
         green.append(FlagItem(
             flag_type="green", flag_name="ssl_certificate_present",
-            description=f"Valid SSL/TLS certificate issued by {dns_info.ssl_issuer}",
+            description=f"Valid SSL/TLS certificate issued by {dns_info.ssl_issuer}.",
         ))
     if dns_info.domain_age_days is not None and dns_info.domain_age_days > 365:
         green.append(FlagItem(
             flag_type="green", flag_name="established_domain",
-            description=f"Domain has been registered for over {dns_info.domain_age_days // 365} year(s)",
+            description=f"Domain has been registered for over {dns_info.domain_age_days // 365} year(s), indicating an established organisation.",
         ))
     if dns_info.has_mx:
         green.append(FlagItem(
             flag_type="green", flag_name="mx_records_present",
-            description="Domain has mail exchange records (consistent with a real organisation)",
+            description="Domain has mail exchange records, consistent with a real email-sending organisation.",
         ))
 
     return red, green

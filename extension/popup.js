@@ -1,44 +1,62 @@
-// PhishGuard UK - Enterprise Analyzer Script
+// PhishGuard UK - Popup Script v2.0
+// Supports: Website analysis (existing) + Gmail email analysis (new)
+
+const BACKEND_URL = 'http://127.0.0.1:8000';
+
+// ── On popup open: detect Gmail ───────────────────────────────────────────────
+
+(async () => {
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const isGmail = tab.url && tab.url.includes('mail.google.com');
+
+    if (isGmail) {
+      // Ask content script if an email is currently open
+      chrome.tabs.sendMessage(tab.id, { action: 'isGmailEmail' }, (resp) => {
+        if (chrome.runtime.lastError) return; // content script not ready yet
+        if (resp && resp.isOpen) {
+          showGmailEmailSection();
+        }
+      });
+    }
+  } catch (e) {
+    // Non-critical — just don't show Gmail section
+  }
+})();
+
+function showGmailEmailSection() {
+  const gmailSection = document.getElementById('gmailSection');
+  if (gmailSection) gmailSection.style.display = 'block';
+}
+
+
+// ── Website scan (existing) ───────────────────────────────────────────────────
 
 document.getElementById('analyzeBtn').addEventListener('click', async () => {
   const initialView = document.getElementById('initialView');
   const loaderView = document.getElementById('loaderView');
   const resultView = document.getElementById('resultView');
-  
-  // Transition to loader
+
   initialView.style.display = 'none';
   loaderView.style.display = 'block';
 
   try {
-    // 1. Get current active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    console.log("Analyzing tab:", tab.url);
-    
-    // 2. Request data from content script
-    chrome.tabs.sendMessage(tab.id, { action: "analyzePage" }, async (pageData) => {
-      console.log("Data from content script:", pageData);
+    chrome.tabs.sendMessage(tab.id, { action: 'analyzePage' }, async (pageData) => {
       if (chrome.runtime.lastError || !pageData) {
-        console.error("Data extraction failed:", chrome.runtime.lastError);
-        alert("PhishGuard: Could not extract page data. Please refresh the page and try again.");
+        alert('PhishGuard: Could not extract page data. Please refresh the page and try again.');
         resetUI();
         return;
       }
-      
-      // 3. Send to Backend
       try {
-        console.log("Sending to backend:", 'http://127.0.0.1:8000/api/extension/analyse');
-        const response = await fetch('http://127.0.0.1:8000/api/extension/analyse', {
+        const response = await fetch(`${BACKEND_URL}/api/extension/analyse`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(pageData)
         });
-
         if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-
-        const result = await response.json();
-        renderResults(result);
+        renderSiteResults(response = await response.json());
       } catch (error) {
-        console.error('Backend connection failed:', error);
         alert('PhishGuard Core Engine is offline. Ensure your backend is running on port 8000.');
         resetUI();
       }
@@ -49,11 +67,10 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
   }
 });
 
-function renderResults(result) {
+function renderSiteResults(result) {
   const loaderView = document.getElementById('loaderView');
   const resultView = document.getElementById('resultView');
-  
-  // Elements
+
   const statusBanner = document.getElementById('statusBanner');
   const statusIcon = document.getElementById('statusIcon');
   const statusText = document.getElementById('statusText');
@@ -65,27 +82,22 @@ function renderResults(result) {
   const explanationText = document.getElementById('explanationText');
   const flagsList = document.getElementById('flagsList');
 
-  // 1. Hide Loader, Show Results
   loaderView.style.display = 'none';
   resultView.style.display = 'block';
 
-  // 2. Set Status Style
   statusBanner.className = `status-banner ${result.label}`;
-  
+
   if (result.label === 'legitimate') {
-      statusText.textContent = 'TRUSTED';
-      scorePct.textContent = `${100 - result.score_pct}% SECURE`;
+    statusText.textContent = 'TRUSTED';
+    scorePct.textContent = `${100 - result.score_pct}% SECURE`;
   } else if (result.label === 'suspicious') {
-      statusText.textContent = 'SUSPICIOUS';
-      scorePct.textContent = `${result.score_pct}% RISK`;
+    statusText.textContent = 'SUSPICIOUS';
+    scorePct.textContent = `${result.score_pct}% RISK`;
   } else {
-      statusText.textContent = 'PHISHING';
-      scorePct.textContent = `${result.score_pct}% THREAT`;
-      // Scary warning for phishing
-      explanationText.innerHTML = `<span style="color: #ef4444; font-weight: bold;">⚠️ CRITICAL SECURITY WARNING:</span> ${result.explanation}`;
+    statusText.textContent = 'PHISHING';
+    scorePct.textContent = `${result.score_pct}% THREAT`;
   }
-  
-  // Icons based on label
+
   if (result.label === 'phishing') {
     statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="3"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
   } else if (result.label === 'legitimate') {
@@ -94,34 +106,27 @@ function renderResults(result) {
     statusIcon.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
   }
 
-  // 3. Set Technical Grid
   hostingVal.textContent = result.hosting || 'Cloud Hosted';
   ipVal.textContent = result.server_ip || 'Hidden/Proxy';
-  
-  // Display primary tech or standard
   const tech = result.tech_stack || [];
   techVal.textContent = tech.length > 0 ? tech[0] : 'Standard Web';
-  
-  // DNS/Security logic
-  const hasSecurity = result.green_flags.some(f => f.flag_name === 'valid_ssl_certificate');
+  const hasSecurity = result.green_flags.some(f => f.flag_name === 'valid_ssl_certificate' || f.flag_name === 'ssl_certificate_present');
   secVal.textContent = hasSecurity ? 'Verified SSL' : 'Insecure';
   secVal.style.color = hasSecurity ? '#22c55e' : '#ef4444';
 
-  // 4. Set Explanation
-  explanationText.textContent = result.explanation;
+  if (result.label === 'phishing') {
+    explanationText.innerHTML = `<span style="color:#ef4444;font-weight:bold;">⚠️ CRITICAL:</span> ${result.explanation}`;
+  } else {
+    explanationText.textContent = result.explanation;
+  }
 
-  // 5. Render Flags
   flagsList.innerHTML = '';
-  
-  // Green flags first
   result.green_flags.forEach(f => {
     const div = document.createElement('div');
     div.className = 'flag green';
     div.innerHTML = `<span>✅</span> <span>${f.description}</span>`;
     flagsList.appendChild(div);
   });
-
-  // Red flags
   result.red_flags.forEach(f => {
     const div = document.createElement('div');
     div.className = 'flag red';
@@ -129,6 +134,188 @@ function renderResults(result) {
     flagsList.appendChild(div);
   });
 }
+
+
+// ── Gmail email analysis ──────────────────────────────────────────────────────
+
+document.getElementById('gmailAnalyzeBtn').addEventListener('click', async () => {
+  const gmailLoader = document.getElementById('gmailLoader');
+  const gmailResults = document.getElementById('gmailResults');
+  const gmailError = document.getElementById('gmailError');
+
+  gmailLoader.style.display = 'block';
+  gmailResults.style.display = 'none';
+  gmailError.style.display = 'none';
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    // Step 1: Extract email data from Gmail DOM via content script
+    const emailData = await new Promise((resolve, reject) => {
+      chrome.tabs.sendMessage(tab.id, { action: 'analyzeGmailEmail' }, (data) => {
+        if (chrome.runtime.lastError || !data) {
+          reject(new Error('Could not read email from Gmail. Please make sure an email is open.'));
+        } else {
+          resolve(data);
+        }
+      });
+    });
+
+    if (!emailData.subject && !emailData.body) {
+      throw new Error('No email content found. Please open an email in Gmail first.');
+    }
+
+    // Step 2: Send to backend for analysis
+    const response = await fetch(`${BACKEND_URL}/api/extension/mail-analyse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject: emailData.subject || '',
+        sender: emailData.sender || '',
+        body: emailData.body || '',
+        attachments: emailData.attachmentNames || [],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.detail || `Backend error ${response.status}`);
+    }
+
+    const result = await response.json();
+    renderGmailResults(result, emailData);
+
+  } catch (err) {
+    gmailLoader.style.display = 'none';
+    gmailError.style.display = 'block';
+    gmailError.textContent = `⚠️ ${err.message}`;
+  }
+});
+
+function riskColor(label) {
+  if (label === 'phishing') return '#ef4444';
+  if (label === 'suspicious') return '#f59e0b';
+  return '#22c55e';
+}
+
+function riskIcon(label) {
+  if (label === 'phishing') return '🚨';
+  if (label === 'suspicious') return '⚠️';
+  return '✅';
+}
+
+function attachRiskColor(level) {
+  if (level === 'critical') return '#ef4444';
+  if (level === 'high') return '#f97316';
+  if (level === 'medium') return '#f59e0b';
+  return '#22c55e';
+}
+
+function attachRiskLabel(level) {
+  if (level === 'critical') return '🔴 CRITICAL';
+  if (level === 'high') return '🟠 HIGH';
+  if (level === 'medium') return '🟡 MEDIUM';
+  return '✅ SAFE';
+}
+
+function renderGmailResults(result, emailData) {
+  const gmailLoader = document.getElementById('gmailLoader');
+  const gmailResults = document.getElementById('gmailResults');
+
+  gmailLoader.style.display = 'none';
+  gmailResults.style.display = 'block';
+
+  const color = riskColor(result.overall_label);
+  const icon = riskIcon(result.overall_label);
+
+  // Verdict banner
+  document.getElementById('gmailVerdict').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;
+      background:${color}18;border:1px solid ${color}44;margin-bottom:12px;">
+      <span style="font-size:22px">${icon}</span>
+      <div style="flex:1">
+        <div style="font-weight:800;font-size:13px;color:${color};text-transform:uppercase;letter-spacing:.08em">
+          ${result.overall_label}
+        </div>
+        <div style="font-size:11px;color:#94a3b8">From: ${emailData.sender || 'Unknown'}</div>
+        <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">
+          ${emailData.subject || '(No Subject)'}
+        </div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:${color}">
+        ${result.overall_score_pct}%
+      </div>
+    </div>
+  `;
+
+  // AI Explanation
+  document.getElementById('gmailExplanation').textContent = result.explanation || '';
+
+  // Flags
+  const flagsEl = document.getElementById('gmailFlags');
+  flagsEl.innerHTML = '';
+  (result.red_flags || []).forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'flag red';
+    d.innerHTML = `<span>❌</span><span>${f.description}</span>`;
+    flagsEl.appendChild(d);
+  });
+  (result.green_flags || []).forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'flag green';
+    d.innerHTML = `<span>✅</span><span>${f.description}</span>`;
+    flagsEl.appendChild(d);
+  });
+
+  // Attachment risk cards
+  const attachEl = document.getElementById('gmailAttachments');
+  const attachments = result.attachment_results || [];
+  if (attachments.length > 0) {
+    attachEl.style.display = 'block';
+    attachEl.innerHTML = `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:8px;">
+      📎 Attachments (${attachments.length})</div>`;
+    attachments.forEach(a => {
+      const c = attachRiskColor(a.risk_level);
+      const lbl = attachRiskLabel(a.risk_level);
+      const card = document.createElement('div');
+      card.style.cssText = `background:${c}12;border:1px solid ${c}40;border-radius:8px;padding:10px 12px;margin-bottom:6px;`;
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${a.filename}</span>
+          <span style="font-size:10px;font-weight:800;color:${c};white-space:nowrap;margin-left:8px">${lbl}</span>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.4">${a.description}</div>
+      `;
+      attachEl.appendChild(card);
+    });
+  } else {
+    attachEl.style.display = 'none';
+  }
+
+  // URLs
+  const urlsEl = document.getElementById('gmailUrls');
+  const urls = result.extracted_urls || [];
+  if (urls.length > 0) {
+    urlsEl.style.display = 'block';
+    urlsEl.innerHTML = `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin-bottom:8px;">
+      🔗 Links Found (${urls.length})</div>`;
+    urls.slice(0, 5).forEach(u => {
+      const c = riskColor(u.label);
+      const item = document.createElement('div');
+      item.style.cssText = `display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);margin-bottom:4px;`;
+      item.innerHTML = `
+        <span style="background:${c};color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap">${u.label.toUpperCase()}</span>
+        <span style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.url.length > 55 ? u.url.slice(0, 55) + '…' : u.url}</span>
+      `;
+      urlsEl.appendChild(item);
+    });
+  } else {
+    urlsEl.style.display = 'none';
+  }
+}
+
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
 
 function resetUI() {
   document.getElementById('initialView').style.display = 'block';

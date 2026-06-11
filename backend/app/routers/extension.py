@@ -3,13 +3,13 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.extension_schema import ExtensionPayload
 from app.schemas.scan_schema import FlagItem
-from app.services import ai_service, dns_service, email_service, ml_service
+from app.services import ai_service, dns_service, email_service, ml_service, attachment_service
 from app.services.site_service import analyse_live_site
 
 router = APIRouter(
@@ -24,6 +24,10 @@ class MailAssistantRequest(BaseModel):
     subject: str = ""
     sender: str = ""
     body: str = ""
+    # Optional: raw HTML body — enables HTML link deception detection
+    body_html: str = Field(default="", max_length=200_000)
+    # Optional: list of attachment filenames for risk scoring
+    attachments: list[str] = Field(default_factory=list, max_length=50)
 
 
 class UrlSummary(BaseModel):
@@ -43,6 +47,12 @@ class DomainIntel(BaseModel):
     score_pct: int = 0
 
 
+class AttachmentResult(BaseModel):
+    filename: str
+    risk_level: str
+    description: str
+
+
 class MailAssistantResult(BaseModel):
     overall_label: str
     overall_score_pct: int
@@ -53,6 +63,7 @@ class MailAssistantResult(BaseModel):
     extracted_urls: list[UrlSummary]
     domain_intel: DomainIntel | None = None
     explanation: str
+    attachment_results: list[AttachmentResult] = []
     scanned_at: str
 
 
@@ -72,8 +83,22 @@ async def mail_analyse(
     """
     combined_text = f"Subject: {body.subject}\nFrom: {body.sender}\n\n{body.body}"
 
+    # Sanitise attachment filenames — only keep basename, strip any path traversal
+    import os
+    safe_attachments = [
+        os.path.basename(name.strip())[:255]
+        for name in (body.attachments or [])
+        if name and name.strip()
+    ][:50]
+
     # Extract sender domain
     sender_domain = body.sender.split("@")[-1].strip() if "@" in body.sender else ""
+    # Strip any angle brackets or display name from sender domain
+    import re as _re
+    sender_domain = _re.sub(r"[<>\s]", "", sender_domain).lower()
+
+    # Extract URLs upfront so all checks share the same list
+    extracted_urls = email_service.extract_urls_from_text(combined_text)
 
     # Run email text scoring and domain analysis concurrently
     async def _domain_analysis():
@@ -85,12 +110,18 @@ async def mail_analyse(
             return None
 
     email_score_data, domain_result = await asyncio.gather(
-        asyncio.to_thread(email_service.score_email_text, body.subject, body.body),
+        asyncio.to_thread(
+            email_service.score_email_text,
+            body.subject,
+            body.body,
+            body.sender,
+            body.body_html,
+            extracted_urls,
+        ),
         _domain_analysis(),
     )
 
-    # Extract and score URLs
-    extracted_urls = email_service.extract_urls_from_text(combined_text)
+    # Score URLs via ML model
     url_summaries: list[UrlSummary] = []
     url_scores: list[float] = []
     for url in extracted_urls[:15]:
@@ -111,16 +142,39 @@ async def mail_analyse(
     overall_pct = int(round(overall_score * 100))
     overall_label = ml_service._score_to_label(overall_score)
 
-    # Merge all flags (email + domain)
+    # Merge all flags (email + domain + sender mismatch)
     all_red = (
         email_score_data["red_flags"]
         + email_service._sender_domain_mismatch(combined_text, extracted_urls)
     )
     if domain_result:
         all_red += domain_result.get("red_flags", [])
-    all_green = email_score_data["green_flags"]
+
+    # Attachment risk flags
+    attach_assessments = attachment_service.score_attachments(safe_attachments)
+    attachment_flags = attachment_service.get_attachment_flags(safe_attachments)
+    all_red += [f for f in attachment_flags if f.flag_type == "red"]
+
+    all_green = list(email_score_data["green_flags"])
     if domain_result:
         all_green += domain_result.get("green_flags", [])
+    all_green += [f for f in attachment_flags if f.flag_type == "green"]
+
+    # Deduplicate flags by flag_name to avoid repeated entries
+    seen_red: set[str] = set()
+    seen_green: set[str] = set()
+    deduped_red: list[FlagItem] = []
+    deduped_green: list[FlagItem] = []
+    for flag in all_red:
+        key = f"{flag.flag_name}:{flag.description[:60]}"
+        if key not in seen_red:
+            seen_red.add(key)
+            deduped_red.append(flag)
+    for flag in all_green:
+        key = f"{flag.flag_name}:{flag.description[:60]}"
+        if key not in seen_green:
+            seen_green.add(key)
+            deduped_green.append(flag)
 
     # Build domain intel object
     domain_intel: DomainIntel | None = None
@@ -137,14 +191,23 @@ async def mail_analyse(
             score_pct=domain_result.get("score_pct", 0),
         )
 
-    # AI explanation
+    # AI explanation — include attachment context
+    attach_summary = ""
+    if attach_assessments:
+        critical = [a["filename"] for a in attach_assessments if a["risk_level"] == "critical"]
+        high = [a["filename"] for a in attach_assessments if a["risk_level"] == "high"]
+        if critical:
+            attach_summary = f" Dangerous attachments detected: {', '.join(critical)}."
+        elif high:
+            attach_summary = f" High-risk attachments: {', '.join(high)}."
+
     try:
         explanation = await ai_service.generate_explanation(
-            input_value=combined_text[:200],
+            input_value=(combined_text[:200] + attach_summary),
             label=overall_label,
             score_pct=overall_pct,
-            red_flags=[{"flag_name": f.flag_name, "description": f.description} for f in all_red],
-            green_flags=[{"flag_name": f.flag_name, "description": f.description} for f in all_green],
+            red_flags=[{"flag_name": f.flag_name, "description": f.description} for f in deduped_red],
+            green_flags=[{"flag_name": f.flag_name, "description": f.description} for f in deduped_green],
         )
     except Exception:
         if overall_label == "legitimate":
@@ -159,11 +222,14 @@ async def mail_analyse(
         overall_score_pct=overall_pct,
         security_score_pct=100 - overall_pct,
         sender_domain=sender_domain,
-        red_flags=all_red,
-        green_flags=all_green,
+        red_flags=deduped_red,
+        green_flags=deduped_green,
         extracted_urls=url_summaries,
         domain_intel=domain_intel,
         explanation=explanation,
+        attachment_results=[
+            AttachmentResult(**a) for a in attach_assessments
+        ],
         scanned_at=datetime.now(tz=timezone.utc).isoformat(),
     )
 

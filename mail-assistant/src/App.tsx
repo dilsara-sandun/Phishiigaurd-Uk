@@ -26,6 +26,12 @@ interface DomainIntel {
   score_pct: number;
 }
 
+interface AttachmentResult {
+  filename: string;
+  risk_level: 'critical' | 'high' | 'medium' | 'safe' | 'unknown';
+  description: string;
+}
+
 interface AnalysisResult {
   overall_label: string;
   overall_score_pct: number;
@@ -36,6 +42,7 @@ interface AnalysisResult {
   extracted_urls: UrlSummary[];
   domain_intel: DomainIntel | null;
   explanation: string;
+  attachment_results: AttachmentResult[];
   scanned_at: string;
 }
 
@@ -43,6 +50,7 @@ interface EmailMeta {
   subject: string;
   sender: string;
   attachmentCount: number;
+  attachmentNames: string[];
 }
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -81,29 +89,32 @@ export default function App() {
   const [meta, setMeta] = useState<EmailMeta | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'domain' | 'links'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'domain' | 'links' | 'attachments'>('summary');
 
-  // ── Read email from Outlook via Office.js ─────────────────────────────────
-  const readEmail = (): Promise<{ subject: string; sender: string; body: string; attachmentCount: number }> =>
+  // ── Read email from Outlook via Office.js ───────────────────────────────────
+  const readEmail = (): Promise<{ subject: string; sender: string; body: string; attachmentCount: number; attachmentNames: string[] }> =>
     new Promise((resolve, reject) => {
       const Office = (window as any).Office;
       if (!Office?.context?.mailbox?.item) {
-        return reject('Please open an email first, then click Analyze. If using Gmail, see the note below.');
+        return reject('Please open an email first, then click Analyze.');
       }
       const item = Office.context.mailbox.item;
       const subject = item.subject ?? '(No Subject)';
       const sender = item.from?.emailAddress ?? '';
-      const attachmentCount = item.attachments?.length ?? 0;
+      const attachments = item.attachments ?? [];
+      const attachmentCount = attachments.length;
+      // Collect only the filename (name property) — never the content
+      const attachmentNames: string[] = attachments.map((a: any) => a.name ?? '');
 
       item.body.getAsync(Office.CoercionType.Text, (res: any) => {
         if (res.status !== Office.AsyncResultStatus.Succeeded) {
           return reject('Could not read email body. Please try again.');
         }
-        resolve({ subject, sender, body: res.value ?? '', attachmentCount });
+        resolve({ subject, sender, body: res.value ?? '', attachmentCount, attachmentNames });
       });
     });
 
-  // ── Analyze ───────────────────────────────────────────────────────────────
+  // ── Analyze ─────────────────────────────────────────────────────────────────────────
   const analyze = async () => {
     setError('');
     setResult(null);
@@ -111,14 +122,14 @@ export default function App() {
 
     try {
       setScreen('reading');
-      const { subject, sender, body, attachmentCount } = await readEmail();
-      setMeta({ subject, sender, attachmentCount });
+      const { subject, sender, body, attachmentCount, attachmentNames } = await readEmail();
+      setMeta({ subject, sender, attachmentCount, attachmentNames });
 
       setScreen('scanning');
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, sender, body }),
+        body: JSON.stringify({ subject, sender, body, attachments: attachmentNames }),
       });
 
       if (!res.ok) {
