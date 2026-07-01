@@ -31,8 +31,15 @@ from app.schemas.auth_schema import (
     TokenResponse,
     Login2FAInitResponse,
     VerifyLoginRequest,
+    VerifyLoginTOTPRequest,
+    TOTPSetupResponse,
+    TOTPConfirmRequest,
+    TOTPStatusResponse,
     UserProfile,
     VerifyOTPRequest,
+    ProfileUpdateRequest,
+    ProfileConfirmRequest,
+    ChangePasswordRequest,
 )
 from app.services.auth_service import (
     authenticate_user,
@@ -47,6 +54,10 @@ from app.services.auth_service import (
     reset_password_with_token,
     verify_otp,
     _generate_otp,
+    setup_totp,
+    confirm_totp,
+    disable_totp,
+    verify_totp_code,
 )
 from app.services.notification_service import (
     send_otp_email,
@@ -177,15 +188,28 @@ async def login(
     user.verify_token_attempts = 0
     await db.commit()
 
-    device_info = request.headers.get("User-Agent", "Unrecognized Device")
-    await send_login_verification_email(user.email, otp, device_info)
-    
-    logger.info("2FA OTP sent for user login: %s", user.email)
+    # Only send email OTP if user does NOT have TOTP enabled
+    # (TOTP users get the TOTP prompt on the frontend)
+    if not user.totp_enabled:
+        device_info = request.headers.get("User-Agent", "Unrecognized Device")
+        email_sent = await send_login_verification_email(user.email, otp, device_info)
+        if email_sent:
+            logger.info("2FA email OTP sent for login: %s", user.email)
+        else:
+            logger.error(
+                "FAILED to send 2FA OTP email for login to %s — "
+                "check SMTP credentials and Brevo sender verification.",
+                user.email,
+            )
+    else:
+        logger.info("TOTP user login initiated (no email sent): %s", user.email)
 
     return Login2FAInitResponse(
-        message="Verification code sent to your email.",
+        message="Verification code sent to your email." if not user.totp_enabled
+               else "Enter the code from your authenticator app.",
         email=user.email,
-        requires_2fa=True
+        requires_2fa=True,
+        totp_available=user.totp_enabled,
     )
 
 
@@ -395,3 +419,298 @@ async def get_me(
     Requires a valid access token.
     """
     return UserProfile.model_validate(current_user)
+
+
+# ── POST /auth/totp/setup ─────────────────────────────────────────────────────
+
+@router.post(
+    "/totp/setup",
+    response_model=TOTPSetupResponse,
+    summary="Generate a TOTP secret and QR code for authenticator app setup",
+)
+@limiter.limit("5/minute")
+async def totp_setup(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> TOTPSetupResponse:
+    """
+    Generates a new TOTP secret for the authenticated user and returns:
+    - The otpauth:// provisioning URI
+    - A base64-encoded QR code PNG for display in the frontend
+    - The raw Base32 secret for manual entry in the authenticator app
+
+    The TOTP is NOT yet active — the user must confirm with a valid code
+    via POST /auth/totp/confirm to activate it.
+    """
+    import base64
+    import io
+    import qrcode
+
+    secret, uri = await setup_totp(db, current_user)
+    await db.commit()
+
+    # Generate QR code PNG in-memory
+    qr_img = qrcode.make(uri)
+    buf = io.BytesIO()
+    qr_img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    logger.info("TOTP setup initiated for user: %s", current_user.email)
+
+    return TOTPSetupResponse(
+        provisioning_uri=uri,
+        qr_code_base64=qr_b64,
+        secret=secret,
+    )
+
+
+# ── POST /auth/totp/confirm ───────────────────────────────────────────────────
+
+@router.post(
+    "/totp/confirm",
+    response_model=MessageResponse,
+    summary="Confirm TOTP setup by verifying the first authenticator code",
+)
+@limiter.limit("5/minute")
+async def totp_confirm(
+    request: Request,
+    body: TOTPConfirmRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    """
+    Activates TOTP for the user after they enter their first valid code.
+    Raises 400 if the code is wrong or no secret has been generated yet.
+    """
+    success = await confirm_totp(db, current_user, body.totp_code)
+    if not success:
+        logger.warning("TOTP confirm failed for user: %s", current_user.email)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid authenticator code. Please ensure your app is synced and try again.",
+        )
+    await db.commit()
+    logger.info("TOTP successfully enabled for user: %s", current_user.email)
+    return MessageResponse(message="Authenticator app enabled successfully. Your account is now protected by TOTP.")
+
+
+# ── DELETE /auth/totp/disable ─────────────────────────────────────────────────
+
+@router.delete(
+    "/totp/disable",
+    response_model=MessageResponse,
+    summary="Disable TOTP and remove the stored secret",
+)
+@limiter.limit("3/minute")
+async def totp_disable(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    """
+    Disables TOTP for the authenticated user and wipes their stored secret.
+    After this, login will fall back to email OTP.
+    """
+    await disable_totp(db, current_user)
+    await db.commit()
+    logger.info("TOTP disabled for user: %s", current_user.email)
+    return MessageResponse(message="Authenticator app has been removed. Email OTP will be used for future logins.")
+
+
+# ── GET /auth/totp/status ─────────────────────────────────────────────────────
+
+@router.get(
+    "/totp/status",
+    response_model=TOTPStatusResponse,
+    summary="Return whether TOTP is enabled for the current user",
+)
+async def totp_status(
+    current_user: User = Depends(get_current_user),
+) -> TOTPStatusResponse:
+    """Return the TOTP enabled status for the current authenticated user."""
+    return TOTPStatusResponse(totp_enabled=current_user.totp_enabled)
+
+
+# ── POST /auth/verify-login-totp ──────────────────────────────────────────────
+
+@router.post(
+    "/verify-login-totp",
+    response_model=TokenResponse,
+    summary="Complete login using a TOTP code from the authenticator app",
+)
+@limiter.limit("10/minute")
+async def verify_login_totp(
+    request: Request,
+    body: VerifyLoginTOTPRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """
+    Accepts the 6-digit TOTP code from Microsoft/Google Authenticator at login.
+    The user must have previously completed credential verification (email+password).
+    Returns JWT access + refresh tokens on success.
+
+    Security:
+    - Rate-limited to 10 attempts/minute per IP
+    - TOTP validation uses pyotp with valid_window=1 (clock skew tolerance)
+    - Generic error messages prevent user enumeration
+    """
+    user = await get_user_by_email(db, body.email)
+
+    # Generic error — do not reveal whether the account exists or TOTP is enabled
+    _auth_fail = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid verification code. Please try again.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    if user is None or not user.is_active or not user.totp_enabled or not user.totp_secret:
+        logger.warning("TOTP login attempt for invalid/unconfigured account: %s", body.email)
+        raise _auth_fail
+
+    # Validate TOTP code (constant-time via pyotp)
+    if not verify_totp_code(user.totp_secret, body.totp_code):
+        logger.warning("Invalid TOTP code at login for user: %s", body.email)
+        raise _auth_fail
+
+    # Issue tokens
+    access_token = create_access_token(user.id, user.role)
+    refresh_token = create_refresh_token(user.id)
+
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
+    _set_token_cookies(response, access_token, refresh_token)
+
+    logger.info("User logged in via TOTP: %s (role=%s)", user.email, user.role)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        role=user.role,
+        user_id=user.id,
+        email=user.email,
+    )
+
+
+# ── Profile Management Endpoints ──────────────────────────────────────────────
+
+@router.post(
+    "/profile/request-update",
+    response_model=MessageResponse,
+    summary="Request profile/email update by sending an OTP",
+)
+@limiter.limit("5/minute")
+async def profile_request_update(
+    request: Request,
+    body: ProfileUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    # If updating email, check that it's unique
+    if body.email and body.email.lower() != current_user.email.lower():
+        existing = await get_user_by_email(db, body.email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email address is already in use by another account.",
+            )
+
+    # Generate OTP
+    otp, token_expires = _generate_otp()
+    current_user.verify_token = otp
+    current_user.verify_token_expires = token_expires
+    current_user.verify_token_attempts = 0
+    await db.commit()
+
+    # Send OTP to currently registered email
+    email_sent = await send_otp_email(current_user.email, otp)
+    if not email_sent:
+        logger.error("Failed to send profile update OTP email to %s", current_user.email)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send OTP verification email. Please try again later.",
+        )
+
+    logger.info("Profile update OTP sent to user %s", current_user.email)
+    return MessageResponse(message="Verification code sent to your email.")
+
+
+@router.post(
+    "/profile/confirm-update",
+    response_model=MessageResponse,
+    summary="Confirm profile/email update using OTP and kill active session",
+)
+@limiter.limit("5/minute")
+async def profile_confirm_update(
+    request: Request,
+    body: ProfileConfirmRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    # Verify OTP
+    try:
+        await verify_otp(db, current_user.email, body.otp)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    # Apply changes
+    if body.first_name is not None:
+        current_user.first_name = body.first_name.strip()
+    if body.last_name is not None:
+        current_user.last_name = body.last_name.strip()
+    
+    if body.email and body.email.lower() != current_user.email.lower():
+        # Check one more time to avoid race condition
+        existing = await get_user_by_email(db, body.email)
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email address is already in use by another account.",
+            )
+        current_user.email = body.email.lower()
+
+    await db.commit()
+    logger.info("Profile updated for user %s. Terminating session.", current_user.email)
+
+    # Invalidate session (delete cookies)
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
+
+    return MessageResponse(message="Profile updated successfully. Session terminated, please login again.")
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+    summary="Change user password and send confirmation email",
+)
+@limiter.limit("5/minute")
+async def change_password_endpoint(
+    request: Request,
+    body: ChangePasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    # Validate current password
+    from app.services.auth_service import verify_password, hash_password
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    # Update password
+    current_user.password_hash = hash_password(body.new_password)
+    await db.commit()
+
+    # Send confirmation email
+    try:
+        await send_password_changed_email(current_user.email)
+    except Exception as exc:
+        logger.error("Failed to send password-changed email to %s: %s", current_user.email, exc)
+
+    logger.info("Password changed successfully for user: %s", current_user.email)
+    return MessageResponse(message="Password has been changed successfully.")
+

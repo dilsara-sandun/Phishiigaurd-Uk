@@ -30,6 +30,8 @@ class User(Base):
         index=True,
     )
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
+    last_name: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
     role: Mapped[str] = mapped_column(
         Enum("user", "admin", name="user_role_enum"),
         nullable=False,
@@ -44,6 +46,10 @@ class User(Base):
         DateTime(timezone=True), nullable=True, default=None
     )
     verify_token_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    # TOTP / Authenticator App (Microsoft Authenticator, Google Authenticator)
+    totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

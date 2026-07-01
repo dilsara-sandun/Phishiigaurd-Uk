@@ -60,3 +60,8 @@ httpx==0.27.0
 python-dotenv==1.0.1
 bleach==6.1.0
 python-magic-bin==0.4.14
+
+# ── TOTP / Authenticator App ──────────────────────────────────────────────────
+pyotp>=2.9.0
+qrcode[pil]>=7.4.2
+Pillow>=10.0.0

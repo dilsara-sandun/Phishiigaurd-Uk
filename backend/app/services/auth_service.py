@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import pyotp
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +84,71 @@ def _generate_reset_token() -> tuple[str, datetime]:
         hours=1  # Reset tokens expire in 1 hour
     )
     return token, expires
+
+
+# ── TOTP / Authenticator App ────────────────────────────────────────────────────
+
+APP_NAME = "PhishGuard UK"
+
+
+def generate_totp_secret(user_email: str) -> tuple[str, str]:
+    """
+    Generate a new cryptographically secure TOTP secret.
+    Returns (base32_secret, provisioning_uri).
+    The provisioning_uri is the otpauth:// URL to encode in a QR code.
+    """
+    secret = pyotp.random_base32()   # 160-bit (32 chars) secure random secret
+    totp = pyotp.TOTP(secret)
+    uri = totp.provisioning_uri(name=user_email, issuer_name=APP_NAME)
+    return secret, uri
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    """
+    Validate a 6-digit TOTP code against the stored secret.
+    valid_window=1 allows one 30-second window drift on either side
+    to compensate for clock skew between server and device.
+    """
+    if not secret or not code:
+        return False
+    totp = pyotp.TOTP(secret)
+    return totp.verify(code, valid_window=1)
+
+
+async def setup_totp(db: AsyncSession, user: User) -> tuple[str, str]:
+    """
+    Generate and persist a pending TOTP secret for the user.
+    The secret is saved but totp_enabled remains False until the user
+    confirms with their first valid code (see confirm_totp).
+    Returns (secret, provisioning_uri).
+    """
+    secret, uri = generate_totp_secret(user.email)
+    user.totp_secret = secret
+    user.totp_enabled = False   # not yet confirmed
+    await db.flush()
+    return secret, uri
+
+
+async def confirm_totp(db: AsyncSession, user: User, code: str) -> bool:
+    """
+    Verify the first TOTP code entered by the user during setup.
+    If valid, sets totp_enabled=True and commits.
+    Returns True on success, False if code is wrong.
+    """
+    if not user.totp_secret:
+        return False
+    if not verify_totp_code(user.totp_secret, code):
+        return False
+    user.totp_enabled = True
+    await db.flush()
+    return True
+
+
+async def disable_totp(db: AsyncSession, user: User) -> None:
+    """Disable TOTP for the user and wipe the stored secret."""
+    user.totp_secret = None
+    user.totp_enabled = False
+    await db.flush()
 
 
 # ── Database helpers ──────────────────────────────────────────────────────────

@@ -53,8 +53,8 @@ export default function URLScanner() {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="e.g. https://lloyds-verify.top/auth"
-              className="w-full bg-slate-50 border border-white/[0.08] rounded-xl pl-11 pr-4 py-3.5
-                         text-slate-200 placeholder-slate-500 font-mono text-sm
+              className="w-full bg-slate-50 border border-slate-300 rounded-xl pl-11 pr-4 py-3.5
+                         text-black placeholder-slate-500 font-mono text-sm
                          focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20 focus:bg-white transition-all"
               disabled={loading}
             />

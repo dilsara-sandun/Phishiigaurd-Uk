@@ -4,7 +4,9 @@ from app.schemas.extension_schema import ExtensionPayload
 from app.schemas.scan_schema import FlagItem
 from app.services.ai_service import _call_gemini, _call_ollama
 from app.config import settings
-from app.services.ml_service import LEGITIMATE_BANK_DOMAINS
+from app.services.ml_service import KNOWN_LEGITIMATE_DOMAINS
+# Flat set of all known legitimate domains (bank, tech, etc.) derived from the ml_service map
+LEGITIMATE_BANK_DOMAINS: set[str] = {d for domains in KNOWN_LEGITIMATE_DOMAINS.values() for d in domains}
 LEGITIMATE_TECH_DOMAINS = ["google.com", "microsoft.com", "apple.com", "amazon.com", "facebook.com", "cloudflare.com"]
 
 logger = logging.getLogger(__name__)

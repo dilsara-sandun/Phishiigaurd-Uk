@@ -1,7 +1,13 @@
 {
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/backend"
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/venv/Lib/site-packages"
   ],
-  "python.terminal.activateEnvironment": true
+  "python.analysis.pythonPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  "python.venvPath": "${workspaceFolder}/backend",
+  "python.venvFolders": ["venv"],
+  "python.terminal.activateEnvironment": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true
 }

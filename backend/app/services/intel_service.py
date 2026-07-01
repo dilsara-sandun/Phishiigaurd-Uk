@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.threat_intel import ThreatIntel
-from app.services.ml_service import UK_BANK_BRANDS
+from app.services.ml_service import KNOWN_BRANDS as UK_BANK_BRANDS
 
 logger = logging.getLogger(__name__)
 

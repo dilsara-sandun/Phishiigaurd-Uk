@@ -11,7 +11,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import func, select, delete
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +22,7 @@ from app.models.scan import Scan
 from app.models.scan_flag import ScanFlag
 from app.models.user import User
 from app.schemas.scan_schema import FlagItem, ScanHistoryItem, ScanHistoryResponse
+from app.schemas.auth_schema import MessageResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/history", tags=["History"])
@@ -176,3 +177,26 @@ async def get_scan_detail(
         green_flags=green_flags,
         created_at=scan.created_at.isoformat(),
     )
+
+
+# ── DELETE /history/clear ─────────────────────────────────────────────────────
+
+@router.delete(
+    "/clear",
+    response_model=MessageResponse,
+    summary="Clear the current user's scan history",
+)
+@limiter.limit("10/minute")
+async def clear_history(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MessageResponse:
+    """
+    Deletes all scans submitted by the current user from the database.
+    This also cascades to clean up related flags and support tickets.
+    """
+    await db.execute(delete(Scan).where(Scan.user_id == current_user.id))
+    await db.commit()
+    logger.info("Scan history cleared for user %s", current_user.email)
+    return MessageResponse(message="Scan history successfully cleared.")

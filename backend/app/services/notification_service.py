@@ -148,7 +148,7 @@ async def _send(to_email: str, subject: str, html: str, plain: str) -> bool:
 
     try:
         await asyncio.to_thread(_blocking_send)
-        logger.info("Email sent → %s | Subject: %s", to_email, subject)
+        logger.info("Email sent -> %s | Subject: %s", to_email, subject)
         return True
     except Exception as exc:
         logger.error("Failed to send email to %s: %s", to_email, exc, exc_info=True)
@@ -427,59 +427,56 @@ async def send_password_changed_email(to_email: str) -> bool:
 
 async def send_login_verification_email(to_email: str, otp: str, device_info: str = "Unrecognized Device") -> bool:
     """
-    Send a 2FA verification email during login for unrecognized devices.
-    Modeled structurally after enterprise alerts but uniquely branded.
+    Send a branded OTP verification email during login (2FA).
+    Uses the exact same delivery and formatting style as the registration OTP.
     """
-    subject = f"PhishGuard UK — Login Verification Code"
+    subject = f"Your PhishGuard UK Login Verification Code: {otp}"
+
+    # Split OTP into individual digits for the styled box display
+    digit_cells = "".join(
+        f'<td style="width:44px;height:52px;background:#0a0f1a;border:2px solid #06b6d4;'
+        f'border-radius:8px;text-align:center;vertical-align:middle;'
+        f'font-size:28px;font-weight:700;color:#06b6d4;font-family:monospace;">'
+        f'{d}</td>'
+        for d in otp
+    )
 
     body_html = f"""
-      <h2 style="color:#f1f5f9;font-size:24px;font-weight:700;margin:0 0 16px;">
-        Device Verification Required
+      <!-- Greeting -->
+      <h2 style="color:#f1f5f9;font-size:24px;font-weight:700;margin:0 0 8px;">
+        Verify Your Identity
       </h2>
-      <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        A sign-in attempt requires further verification because we did not recognize your device.
-        To complete the sign-in, enter the verification code on the unrecognized device.
+      <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 32px;">
+        To complete your sign-in to <strong style="color:#e2e8f0;">PhishGuard UK</strong>,
+        please enter the 6-digit verification code below on the login screen.
       </p>
 
+      <!-- OTP digit boxes -->
+      <table cellpadding="0" cellspacing="6" style="margin:0 auto 32px;">
+        <tr>{digit_cells}</tr>
+      </table>
+
+      <!-- Expiry note -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
         <tr>
-          <td style="background:#0a0f1a;border:1px solid rgba(255,255,255,0.07);
-                     border-radius:12px;padding:20px 24px;">
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="color:#64748b;font-size:13px;padding:6px 0;
-                           border-bottom:1px solid rgba(255,255,255,0.05);">Device</td>
-                <td align="right" style="color:#e2e8f0;font-size:13px;
-                           font-weight:600;padding:6px 0;
-                           border-bottom:1px solid rgba(255,255,255,0.05);">
-                  {device_info}
-                </td>
-              </tr>
-              <tr>
-                <td style="color:#64748b;font-size:13px;padding:6px 0;">Verification code</td>
-                <td align="right" style="color:#06b6d4;font-size:24px;
-                           font-weight:700;padding:6px 0;letter-spacing:4px;">
-                  {otp}
-                </td>
-              </tr>
-            </table>
+          <td style="background:#0a0f1a;border:1px solid rgba(6,182,212,0.2);
+                     border-radius:10px;padding:16px 20px;">
+            <p style="color:#64748b;font-size:13px;margin:0;">
+              ⏱ &nbsp;This code expires in
+              <strong style="color:#94a3b8;">{settings.OTP_EXPIRE_MINUTES} minutes</strong>.
+              If you did not request this code, you can safely ignore this email.
+            </p>
           </td>
         </tr>
       </table>
 
-      <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        If you did not attempt to sign in to your account, your password may be compromised. 
-        Visit <a href="{settings.FRONTEND_BASE_URL}/reset-password" style="color:#06b6d4;">Password Security</a> 
-        to create a new, strong password.
-      </p>
-
+      <!-- Security tip -->
       <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
           <td style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);
                      border-radius:10px;padding:16px 20px;">
             <p style="color:#f87171;font-size:13px;margin:0;">
-              🛡️ &nbsp;<strong>Security Alert:</strong> Ensure you retain access to your account.
-              Never share this code with anyone.
+              🔒 &nbsp;<strong>Security tip:</strong> Never share this verification code with anyone.
             </p>
           </td>
         </tr>
@@ -487,12 +484,12 @@ async def send_login_verification_email(to_email: str, otp: str, device_info: st
     """
 
     plain = (
-        f"PhishGuard UK — Device Verification\n"
+        f"PhishGuard UK — Login Verification\n"
         f"{'=' * 40}\n\n"
-        f"A sign-in attempt requires further verification.\n\n"
-        f"Device: {device_info}\n"
-        f"Verification code: {otp}\n\n"
-        f"If you did not attempt to sign in, your password may be compromised.\n"
+        f"Your 6-digit login verification code is:\n\n"
+        f"  {otp}\n\n"
+        f"This code expires in {settings.OTP_EXPIRE_MINUTES} minutes.\n\n"
+        f"If you did not attempt to log in, please ignore this email.\n"
     )
 
     return await _send(to_email, subject, _html_shell(subject, body_html), plain)

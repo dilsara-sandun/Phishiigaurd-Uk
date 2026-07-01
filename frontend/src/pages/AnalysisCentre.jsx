@@ -1,11 +1,16 @@
-import React, { useState } from 'react'
-import { Layers } from 'lucide-react'
+import React from 'react'
+import { useSearchParams } from 'react-router-dom'
 import URLScanner from '../components/URLScanner'
 import EmailAnalyser from '../components/EmailAnalyser'
 import DomainDNS from '../components/DomainDNS'
 
 export default function AnalysisCentre() {
-  const [activeTab, setActiveTab] = useState('url')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeTab = searchParams.get('tab') || 'url'
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab })
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">

@@ -78,11 +78,36 @@ class Login2FAInitResponse(BaseModel):
     message: str
     requires_2fa: bool = True
     email: str
+    totp_available: bool = False  # True if user has TOTP set up
 
 
 class VerifyLoginRequest(BaseModel):
     email: EmailStr
     otp: str = Field(min_length=6, max_length=6)
+
+
+class VerifyLoginTOTPRequest(BaseModel):
+    """Verify login using TOTP code from authenticator app."""
+    email: EmailStr
+    totp_code: str = Field(min_length=6, max_length=6, pattern=r'^[0-9]{6}$')
+
+
+# ── TOTP Setup ────────────────────────────────────────────────────────────────
+
+class TOTPSetupResponse(BaseModel):
+    """Returned when a user initiates TOTP setup."""
+    provisioning_uri: str     # otpauth:// URI to encode in QR code
+    qr_code_base64: str       # base64-encoded PNG QR code image
+    secret: str               # Base32 secret (for manual entry in authenticator)
+
+
+class TOTPConfirmRequest(BaseModel):
+    """User confirms TOTP setup by entering first generated code."""
+    totp_code: str = Field(min_length=6, max_length=6, pattern=r'^[0-9]{6}$')
+
+
+class TOTPStatusResponse(BaseModel):
+    totp_enabled: bool
 
 
 # ── Token refresh ─────────────────────────────────────────────────────────────
@@ -138,3 +163,53 @@ class UserProfile(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+# ── UserProfile (returned by /auth/me) — include totp_enabled ────────────────
+
+class UserProfile(BaseModel):
+    id: uuid.UUID
+    email: str
+    role: str
+    is_verified: bool
+    totp_enabled: bool = False
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Profile update requests ──────────────────────────────────────────────────
+
+class ProfileUpdateRequest(BaseModel):
+    first_name: Optional[str] = Field(default=None, max_length=100)
+    last_name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[EmailStr] = Field(default=None)
+
+
+class ProfileConfirmRequest(BaseModel):
+    first_name: Optional[str] = Field(default=None, max_length=100)
+    last_name: Optional[str] = Field(default=None, max_length=100)
+    email: Optional[EmailStr] = Field(default=None)
+    otp: str = Field(min_length=6, max_length=6)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=12, max_length=72)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        if len(v) < 12:
+            raise ValueError("Password must be at least 12 characters long")
+        if len(v.encode('utf-8')) > 72:
+            raise ValueError("Password cannot exceed 72 bytes")
+        return v

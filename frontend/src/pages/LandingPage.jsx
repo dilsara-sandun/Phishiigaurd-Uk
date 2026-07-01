@@ -231,13 +231,13 @@ export default function LandingPage() {
             <div className="lg:col-span-2 bg-gradient-to-br from-orange-600 via-fuchsia-600 to-purple-800 rounded-[2.5rem] p-12 flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden group hover:scale-[1.03] hover:shadow-[0_40px_100px_rgba(168,85,247,0.2)] transition-all duration-700 cursor-default">
               <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-[100px] group-hover:scale-110 transition-transform duration-1000" />
               <div className="relative z-10">
-                <h3 className="text-5xl font-black text-white mb-6 tracking-tighter">Platform Architecture</h3>
+                <h3 className="text-5xl font-black text-white mb-6 tracking-tighter">PhishGuard Intelligence Hub</h3>
                 <p className="text-white/90 text-xl max-w-xl mb-10 font-medium leading-relaxed">
-                  Built on React 18 and FastAPI, heavily optimized with asynchronous processing and PostgreSQL functional indexing to support massive ingestion loads without breaking a sweat.
+                  Combines XGBoost-powered lexical checking, TF-IDF semantic evaluations, and dynamic DNS heuristics to detect phishing threats across URLs, email payloads, and domains in real-time.
                 </p>
               </div>
-              <Link to="/platform" className="inline-flex items-center gap-3 px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 rounded-2xl text-white font-black transition-all w-fit relative z-10">
-                Explore the Tech Stack <ArrowRight size={20} />
+              <Link to="/login" className="inline-flex items-center gap-3 px-8 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 rounded-2xl text-white font-black transition-all w-fit relative z-10">
+                Explore Scan Tools <ArrowRight size={20} />
               </Link>
             </div>
             

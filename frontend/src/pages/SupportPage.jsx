@@ -1,7 +1,12 @@
-import React from 'react'
-import { LifeBuoy, Mail, MessageSquare, FileText, ExternalLink } from 'lucide-react'
+import React, { useEffect } from 'react'
+import { LifeBuoy, Mail, MessageSquare, FileText, ExternalLink, ShieldAlert } from 'lucide-react'
 
 export default function SupportPage() {
+  useEffect(() => {
+    // Automatically open the floating AI assistant when visiting the support page
+    window.dispatchEvent(new CustomEvent('open-chatbot'))
+  }, [])
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div>
@@ -49,16 +54,21 @@ export default function SupportPage() {
                </div>
             </div>
 
-            <div className="flex items-start gap-4">
-               <div className="mt-1 w-10 h-10 rounded-xl bg-slate-100 border border-white/[0.08] flex items-center justify-center flex-shrink-0">
-                  <MessageSquare size={18} className="text-slate-600" />
-               </div>
-               <div>
-                 <p className="text-sm font-semibold text-slate-800">Live SOC Channel</p>
-                 <p className="text-xs text-slate-500 mb-1">For urgent model false-positive reporting or feedback.</p>
-                 <button className="text-sm text-brand-400 hover:underline">Open Live Chat (Unavailable)</button>
-               </div>
-            </div>
+             <div className="flex items-start gap-4">
+                <div className="mt-1 w-10 h-10 rounded-xl bg-slate-100 border border-white/[0.08] flex items-center justify-center flex-shrink-0">
+                   <MessageSquare size={18} className="text-slate-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Support Chatbot</p>
+                  <p className="text-xs text-slate-500 mb-1">Interactive security advice and general guidelines.</p>
+                  <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-chatbot'))}
+                    className="text-sm text-brand-400 hover:underline font-bold animate-pulse"
+                  >
+                    Open PhishGuard AI Chatbot (Online 24/7)
+                  </button>
+                </div>
+             </div>
 
           </div>
         </div>

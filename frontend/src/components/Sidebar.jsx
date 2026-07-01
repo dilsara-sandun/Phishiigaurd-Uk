@@ -9,24 +9,34 @@ import clsx from 'clsx'
 
 const NAV = [
   { label: 'Overview',        icon: LayoutDashboard, to: '/dashboard' },
-  { label: 'Analysis Centre', icon: ScanLine,        to: '/analysis'  },
   { label: 'Page Analyzer',   icon: FileSearch,      to: '/analyzer'  },
   { label: 'Scan History',    icon: History,         to: '/history'   },
   { label: 'Support',         icon: LifeBuoy,        to: '/support'   },
 ]
 
+const ACCOUNT_NAV = [
+  { label: 'Account Settings', icon: Settings, to: '/settings' },
+]
+
+
 const TOOLS = [
-  { label: 'URL Scanner',  icon: Wifi,   to: '/analysis' },
-  { label: 'Email Analyser',icon: Mail,  to: '/analysis' },
-  { label: 'Domain / DNS', icon: Globe,  to: '/analysis' },
+  { label: 'URL Scanner',  icon: Wifi,   to: '/analysis?tab=url' },
+  { label: 'Email Analyser',icon: Mail,  to: '/analysis?tab=email' },
+  { label: 'Domain / DNS', icon: Globe,  to: '/analysis?tab=dns' },
 ]
 
 function NavItem({ item, collapsed }) {
   const { icon: Icon, label, to } = item
+  const location = useLocation()
+  const currentPath = location.pathname + location.search
+
+  // Match query parameter if present, otherwise match path
+  const isActive = currentPath === to || (to === '/analysis?tab=url' && location.pathname === '/analysis' && !location.search)
+
   return (
     <NavLink
       to={to}
-      className={({ isActive }) =>
+      className={
         clsx(
           'nav-item group relative',
           isActive && 'active',
@@ -82,7 +92,7 @@ export default function Sidebar({ open, setOpen }) {
             Monitor
           </p>
         )}
-        {NAV.slice(0, 3).map((item) => (
+        {NAV.slice(0, 2).map((item) => (
           <NavItem key={item.to} item={item} collapsed={collapsed} />
         ))}
 
@@ -91,7 +101,7 @@ export default function Sidebar({ open, setOpen }) {
             History
           </p>
         )}
-        {NAV.slice(3).map((item) => (
+        {NAV.slice(2).map((item) => (
           <NavItem key={item.to} item={item} collapsed={collapsed} />
         ))}
 
@@ -105,6 +115,16 @@ export default function Sidebar({ open, setOpen }) {
             ))}
           </>
         )}
+
+        {/* Account section */}
+        {!collapsed && (
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mt-4 mb-2">
+            Account
+          </p>
+        )}
+        {ACCOUNT_NAV.map((item) => (
+          <NavItem key={item.to} item={item} collapsed={collapsed} />
+        ))}
       </nav>
 
       {/* Live indicator */}

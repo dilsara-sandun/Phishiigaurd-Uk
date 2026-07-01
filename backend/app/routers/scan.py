@@ -324,19 +324,26 @@ async def scan_email(
     "/email/upload",
     response_model=EmailScanResult,
     status_code=status.HTTP_200_OK,
-    summary="Analyse an uploaded .eml or .txt email file",
+    summary="Analyse an uploaded .pdf or .txt email file",
 )
 @limiter.limit(settings.SCAN_RATE_LIMIT)
 async def scan_email_file(
     request: Request,
-    file: UploadFile = File(..., description="Raw .eml or .txt email file"),
+    file: UploadFile = File(..., description="Raw .pdf or .txt email file"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> EmailScanResult:
     """
-    Parse an uploaded .eml or plain text file, then delegate to scan_email logic.
+    Parse an uploaded .pdf or plain text file, then delegate to scan_email logic.
     File size is limited to 1 MB.
     """
+    filename = file.filename.lower() if file.filename else ""
+    if not (filename.endswith('.pdf') or filename.endswith('.txt')):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error: Invalid file format. Only PDF (.pdf) and Text (.txt) files are allowed. Please check again."
+        )
+
     MAX_SIZE = 1_048_576   # 1 MB
     raw_bytes = await file.read()
     if len(raw_bytes) > MAX_SIZE:
@@ -349,12 +356,12 @@ async def scan_email_file(
     mime = magic.Magic(mime=True)
     detected_mime = mime.from_buffer(raw_bytes)
     
-    allowed_mimes = {"text/plain", "message/rfc822", "application/pdf"}
+    allowed_mimes = {"text/plain", "application/pdf"}
     if detected_mime not in allowed_mimes:
         logger.warning("Rejected file upload with suspicious mime type: %s", detected_mime)
         raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="File content does not match allowed types (.eml, .txt, .pdf)",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Error: Invalid file format. Only PDF (.pdf) and Text (.txt) files are allowed. Please check again."
         )
 
     # Extract text based on file type
@@ -372,9 +379,14 @@ async def scan_email_file(
             logger.error(f"Error parsing PDF: {e}")
             raise HTTPException(status_code=400, detail="Could not extract text from PDF")
     else:
-        # Parse .eml headers and body
-        subject, body = email_service.parse_eml(raw_bytes)
-        combined = f"Subject: {subject}\n\n{body}"
+        # Parse text file content
+        try:
+            combined = raw_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            try:
+                combined = raw_bytes.decode("latin-1")
+            except Exception:
+                raise HTTPException(status_code=400, detail="Could not decode text file content")
 
     return await scan_email(
         request=request,
