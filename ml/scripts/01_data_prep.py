@@ -62,10 +62,11 @@ def prep_dataset():
     df_combined['label'] = df_combined['label'].astype(int)
     
     # We want a more balanced dataset since extraction takes time.
-    # Let's sample 100k URLs to make this fast for the demo.
-    if len(df_combined) > 100000:
-        print("Sampling 100k URLs for faster processing...")
-        df_combined = df_combined.sample(100000, random_state=42)
+    # Dynamically load sample size, default increased to 120,000.
+    sample_size = int(os.environ.get("SAMPLE_SIZE", 120000))
+    if len(df_combined) > sample_size:
+        print(f"Sampling {sample_size:,} URLs for faster processing...")
+        df_combined = df_combined.sample(sample_size, random_state=42)
 
     print(f"Cleaned unique URLs: {len(df_combined)}")
 

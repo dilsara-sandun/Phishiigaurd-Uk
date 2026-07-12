@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     # The validator below raises a hard error if this sentinel is used in production.
     # Always set a unique, cryptographically-random SECRET_KEY in your .env.
     SECRET_KEY: str = os.environ.get("SECRET_KEY", _DEV_SECRET_KEY_SENTINEL)
+    PEPPER: str = os.environ.get("PEPPER", "phishguard-default-pepper-key-change-me")
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7

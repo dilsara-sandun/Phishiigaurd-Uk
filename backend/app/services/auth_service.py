@@ -10,6 +10,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
+import hmac
+import hashlib
 import pyotp
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -21,17 +23,46 @@ from app.models.user import User
 # ── Password hashing ──────────────────────────────────────────────────────────
 
 def hash_password(plain: str) -> str:
-    """Return the bcrypt hash of *plain*."""
-    pwd_bytes = plain.encode('utf-8')
+    """Return the peppered bcrypt hash of *plain* using HMAC-SHA256."""
+    pepper = getattr(settings, "PEPPER", "phishguard-default-pepper-key-change-me").encode('utf-8')
+    pw_hmac = hmac.new(pepper, plain.encode('utf-8'), hashlib.sha256).hexdigest()
+    
+    pwd_bytes = pw_hmac.encode('utf-8')
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Return True if *plain* matches the stored *hashed* password."""
+    is_correct, _ = verify_password_with_upgrade(plain, hashed)
+    return is_correct
+
+
+def verify_password_with_upgrade(plain: str, hashed: str) -> tuple[bool, bool]:
+    """
+    Verify password and check if it needs an upgrade to Pepper format.
+    Returns (is_correct, needs_upgrade).
+    """
     pwd_bytes = plain.encode('utf-8')
     hashed_bytes = hashed.encode('utf-8')
-    return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+
+    # Try verify with Pepper (new method)
+    pepper = getattr(settings, "PEPPER", "phishguard-default-pepper-key-change-me").encode('utf-8')
+    pw_hmac = hmac.new(pepper, pwd_bytes, hashlib.sha256).hexdigest().encode('utf-8')
+    try:
+        if bcrypt.checkpw(pw_hmac, hashed_bytes):
+            return True, False
+    except Exception:
+        pass
+
+    # Try verify without Pepper (legacy fallback)
+    try:
+        if bcrypt.checkpw(pwd_bytes, hashed_bytes):
+            return True, True  # correct password, but needs to be re-hashed with pepper
+    except Exception:
+        pass
+
+    return False, False
 
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
@@ -219,7 +250,8 @@ async def authenticate_user(
             mins_left = int((_lu.replace(tzinfo=None) if _lu.tzinfo is None else _lu - now).total_seconds() // 60) + 1
             raise ValueError(f"Account locked. Try again in {mins_left} minutes.")
         
-    if not verify_password(password, user.password_hash):
+    is_correct, needs_upgrade = verify_password_with_upgrade(password, user.password_hash)
+    if not is_correct:
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 3:
             user.locked_until = now + timedelta(minutes=10)
@@ -228,6 +260,10 @@ async def authenticate_user(
         await db.flush()
         raise ValueError("Invalid email or password")
         
+    if needs_upgrade:
+        user.password_hash = hash_password(password)
+        await db.flush()
+
     if not user.is_active:
         raise ValueError("This account has been deactivated")
         

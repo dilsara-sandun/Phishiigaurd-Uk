@@ -10,9 +10,12 @@ chatbot conversations using either:
 import logging
 import re
 from typing import Any
+from datetime import datetime, timezone, timedelta
 import httpx
 from fastapi import HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +142,7 @@ def _template_explanation(
 
 def _sanitize_message(message: str) -> str:
     """
-    Detect and mitigate common LLM prompt injection patterns.
+    Detect and mitigate common LLM prompt injection patterns (OWASP LLM01: Prompt Injection).
     """
     if len(message) > 500:
         raise HTTPException(
@@ -147,7 +150,7 @@ def _sanitize_message(message: str) -> str:
             detail="Message too long (max 500 characters)"
         )
     
-    # List of common prompt injection keywords/patterns
+    # Comprehensive prompt injection & jailbreak regex patterns (OWASP LLM01)
     injection_patterns = [
         r"ignore previous instructions",
         r"disregard all previous",
@@ -157,6 +160,12 @@ def _sanitize_message(message: str) -> str:
         r"new instruction:",
         r"forget everything",
         r"bypass security",
+        r"you are now",
+        r"act as a",
+        r"jailbreak",
+        r"ignore safety rules",
+        r"do anything now",
+        r"dan mode",
     ]
     
     for pattern in injection_patterns:
@@ -164,10 +173,57 @@ def _sanitize_message(message: str) -> str:
             logger.warning("Potential prompt injection detected: %s", message)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Potentially malicious input detected. Please rephrase your message."
+                detail="Adversarial or security-bypass input detected. Please rephrase your message."
             )
     
     return message
+
+
+def _sanitize_output(text: str) -> str:
+    """
+    Mitigate OWASP LLM06 (Sensitive Information Disclosure).
+    Redacts any sensitive database schema names, credentials, keys, or private data.
+    """
+    # Redact credit card numbers
+    text = re.sub(r"\b(?:\d[ -]*?){13,16}\b", "[REDACTED_CREDIT_CARD]", text)
+    # Redact email addresses
+    text = re.sub(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b", "[REDACTED_EMAIL]", text)
+    # Redact database credentials pattern e.g. postgres://...
+    text = re.sub(r"postgresql\+[^:\s]+:[^@\s]+@[^\s]+", "[REDACTED_DB_URL]", text)
+    # Redact JWT tokens (partial or full: header only, header.payload, or header.payload.signature)
+    text = re.sub(r"eyJ[A-Za-z0-9-_=]+(?:\.[A-Za-z0-9-_.+/=]*)+", "[REDACTED_JWT]", text)
+    return text
+
+
+async def check_ai_token_limit(db: AsyncSession, user: User, estimated_tokens: int) -> None:
+    """Verify if the user has enough daily AI token quota remaining."""
+    now = datetime.now(timezone.utc)
+    
+    # SQLite returns timezone-naive datetimes, so normalise
+    last_reset = user.last_token_reset
+    last_reset_cmp = last_reset.replace(tzinfo=timezone.utc) if last_reset.tzinfo is None else last_reset
+    
+    if now - last_reset_cmp > timedelta(days=1):
+        user.ai_tokens_used_today = 0
+        user.last_token_reset = now
+        await db.flush()
+        
+    quota = user.daily_ai_token_quota
+    used = user.ai_tokens_used_today
+    if used + estimated_tokens > quota:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=(
+                f"Daily AI token limit exceeded ({used}/{quota} tokens used today). "
+                "Please upgrade your subscription tier for higher quotas."
+            )
+        )
+
+
+async def consume_ai_tokens(db: AsyncSession, user: User, actual_tokens: int) -> None:
+    """Deduct the tokens from the user's daily quota."""
+    user.ai_tokens_used_today += actual_tokens
+    await db.flush()
 
 
 # ── Public entry points ──────────────────────────────────────────────────────
@@ -197,17 +253,39 @@ async def generate_explanation(
     return _template_explanation(input_value, label, score_pct, red_flags)
 
 
-async def generate_chat_response(message: str) -> str:
-    """Generate a general chat response for the dashboard chatbot."""
-    message = _sanitize_message(message)
+async def generate_chat_response(db: AsyncSession, user: User, message: str) -> str:
+    """Generate a general chat response for the dashboard chatbot with token limit checking."""
+    # 1. Sanitize user input (OWASP LLM01: Prompt Injection)
+    cleaned_message = _sanitize_message(message)
+    
+    # 2. Check token quota limit
+    estimated_prompt_tokens = max(1, len(cleaned_message) // 4)
+    await check_ai_token_limit(db, user, estimated_prompt_tokens)
+    
+    response_text = ""
+    
+    # 3. Call AI service
     if settings.GEMINI_API_KEY:
         try:
-            return await _call_gemini(message, system_prompt=_CHAT_SYSTEM_PROMPT)
+            response_text = await _call_gemini(cleaned_message, system_prompt=_CHAT_SYSTEM_PROMPT)
         except Exception as exc:
             logger.warning("Gemini chat failed: %s", exc)
 
-    try:
-        return await _call_ollama(message, system_prompt=_CHAT_SYSTEM_PROMPT)
-    except Exception as exc:
-        logger.warning("Ollama chat not available: %s", exc)
-        return "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later."
+    if not response_text:
+        try:
+            response_text = await _call_ollama(cleaned_message, system_prompt=_CHAT_SYSTEM_PROMPT)
+        except Exception as exc:
+            logger.warning("Ollama chat not available: %s", exc)
+            response_text = "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later."
+
+    # 4. Sanitize and redact output (OWASP LLM06: Sensitive Information Disclosure)
+    response_text = _sanitize_output(response_text)
+    
+    # Append disclaimer (OWASP LLM09: Overreliance)
+    response_text += "\n\n*Disclaimer: PhishGuard AI provides automated cybersecurity assistance. Verify critical security issues through official channels.*"
+
+    # 5. Consume tokens (prompt + response)
+    actual_tokens = max(1, (len(cleaned_message) + len(response_text)) // 4)
+    await consume_ai_tokens(db, user, actual_tokens)
+    
+    return response_text

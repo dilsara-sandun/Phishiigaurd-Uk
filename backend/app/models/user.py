@@ -58,6 +58,16 @@ class User(Base):
     totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
+    # Subscription and AI Token Limits
+    tier: Mapped[str] = mapped_column(String(50), nullable=False, default="free", server_default="free")
+    daily_ai_token_quota: Mapped[int] = mapped_column(Integer, nullable=False, default=25000, server_default="25000")
+    ai_tokens_used_today: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    last_token_reset: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

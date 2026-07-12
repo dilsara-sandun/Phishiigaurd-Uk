@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from app.middleware.auth_middleware import get_current_user
 from app.models.user import User
+from app.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.ai_service import generate_chat_response
 
 router = APIRouter(prefix="/ai", tags=["AI Assistance"])
@@ -22,6 +24,7 @@ class ChatResponse(BaseModel):
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(
     body: ChatRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -34,5 +37,5 @@ async def chat_with_ai(
             detail="Message cannot be empty"
         )
     
-    response = await generate_chat_response(body.message)
+    response = await generate_chat_response(db, current_user, body.message)
     return ChatResponse(response=response)
