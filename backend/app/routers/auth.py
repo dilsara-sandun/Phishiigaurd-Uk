@@ -174,10 +174,14 @@ async def login(
     """
     try:
         user = await authenticate_user(db, body.email, body.password)
+        await db.commit()  # commit cleared attempt counters on success
     except ValueError as exc:
+        await db.commit()  # commit incremented attempt counter / lockout
+        err_msg = str(exc)
+        http_status = status.HTTP_423_LOCKED if "locked" in err_msg.lower() else status.HTTP_401_UNAUTHORIZED
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(exc),
+            status_code=http_status,
+            detail=err_msg,
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -569,10 +573,33 @@ async def verify_login_totp(
         logger.warning("TOTP login attempt for invalid/unconfigured account: %s", body.email)
         raise _auth_fail
 
+    # Check lockout
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(tz=timezone.utc)
+    if user.locked_until and user.locked_until > now:
+        mins_left = int((user.locked_until - now).total_seconds() // 60) + 1
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=f"Account locked. Try again in {mins_left} minutes.",
+        )
+
     # Validate TOTP code (constant-time via pyotp)
     if not verify_totp_code(user.totp_secret, body.totp_code):
         logger.warning("Invalid TOTP code at login for user: %s", body.email)
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= 3:
+            user.locked_until = now + timedelta(minutes=10)
+            await db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail="Account locked for 10 minutes due to 3 failed MFA attempts.",
+            )
+        await db.commit()
         raise _auth_fail
+
+    # Success — clear attempt counters
+    user.failed_login_attempts = 0
+    user.locked_until = None
 
     # Issue tokens
     access_token = create_access_token(user.id, user.role)
@@ -581,6 +608,7 @@ async def verify_login_totp(
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/api/auth/refresh")
     _set_token_cookies(response, access_token, refresh_token)
+    await db.commit()
 
     logger.info("User logged in via TOTP: %s (role=%s)", user.email, user.role)
 
@@ -618,21 +646,25 @@ async def profile_request_update(
 
     # Generate OTP
     otp, token_expires = _generate_otp()
-    current_user.verify_token = otp
+    if body.email and body.email.lower() != current_user.email.lower():
+        current_user.verify_token = f"{otp}:{body.email.lower()}"
+    else:
+        current_user.verify_token = otp
     current_user.verify_token_expires = token_expires
     current_user.verify_token_attempts = 0
     await db.commit()
 
-    # Send OTP to currently registered email
-    email_sent = await send_otp_email(current_user.email, otp)
+    # Send OTP to target email (new email if changing email)
+    target_email = body.email.lower() if body.email else current_user.email
+    email_sent = await send_otp_email(target_email, otp)
     if not email_sent:
-        logger.error("Failed to send profile update OTP email to %s", current_user.email)
+        logger.error("Failed to send profile update OTP email to %s", target_email)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send OTP verification email. Please try again later.",
         )
 
-    logger.info("Profile update OTP sent to user %s", current_user.email)
+    logger.info("Profile update OTP sent to %s", target_email)
     return MessageResponse(message="Verification code sent to your email.")
 
 
@@ -650,10 +682,16 @@ async def profile_confirm_update(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     # Verify OTP
+    token_parts = current_user.verify_token.split(':') if current_user.verify_token else []
     try:
-        await verify_otp(db, current_user.email, body.otp)
+        await verify_otp(db, current_user.email, body.otp, check_prefix=True)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+        err_msg = str(exc)
+        if "locked" in err_msg.lower():
+            response.delete_cookie("access_token", path="/")
+            response.delete_cookie("refresh_token", path="/api/auth/refresh")
+            raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=err_msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
 
     # Apply changes
     if body.first_name is not None:
@@ -662,6 +700,14 @@ async def profile_confirm_update(
         current_user.last_name = body.last_name.strip()
     
     if body.email and body.email.lower() != current_user.email.lower():
+        # Validate that the confirmed email matches the one in the token
+        pending_email = token_parts[1] if len(token_parts) == 2 else None
+        if not pending_email or pending_email != body.email.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Verification email mismatch. Please request update again.",
+            )
+
         # Check one more time to avoid race condition
         existing = await get_user_by_email(db, body.email)
         if existing:
@@ -690,20 +736,50 @@ async def profile_confirm_update(
 async def change_password_endpoint(
     request: Request,
     body: ChangePasswordRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
+    # Check if already locked
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(tz=timezone.utc)
+    if current_user.locked_until and current_user.locked_until > now:
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("refresh_token", path="/api/auth/refresh")
+        mins_left = int((current_user.locked_until - now).total_seconds() // 60) + 1
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail=f"Account locked. Try again in {mins_left} minutes.",
+        )
+
     # Validate current password
     from app.services.auth_service import verify_password, hash_password
     if not verify_password(body.current_password, current_user.password_hash):
+        current_user.failed_login_attempts += 1
+        if current_user.failed_login_attempts >= 3:
+            current_user.locked_until = now + timedelta(minutes=10)
+            await db.commit()
+            response.delete_cookie("access_token", path="/")
+            response.delete_cookie("refresh_token", path="/api/auth/refresh")
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail="Account locked for 10 minutes due to 3 failed update attempts.",
+            )
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Current password is incorrect.",
+            detail=f"Current password is incorrect. {3 - current_user.failed_login_attempts} attempts remaining.",
         )
 
     # Update password
     current_user.password_hash = hash_password(body.new_password)
+    current_user.failed_login_attempts = 0
+    current_user.locked_until = None
     await db.commit()
+
+    # Invalidate session (delete cookies)
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/api/auth/refresh")
 
     # Send confirmation email
     try:
@@ -711,6 +787,6 @@ async def change_password_endpoint(
     except Exception as exc:
         logger.error("Failed to send password-changed email to %s: %s", current_user.email, exc)
 
-    logger.info("Password changed successfully for user: %s", current_user.email)
-    return MessageResponse(message="Password has been changed successfully.")
+    logger.info("Password changed successfully for user: %s. Terminating session.", current_user.email)
+    return MessageResponse(message="Password has been changed successfully. Session terminated, please login again.")
 

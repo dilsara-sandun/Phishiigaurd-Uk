@@ -35,14 +35,15 @@ class TicketCreateRequest(BaseModel):
     feedback_type: str  # false_positive | false_negative | other
     comment: str | None = None
 
-    class Config:
-        json_schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "scan_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
                 "feedback_type": "false_positive",
                 "comment": "This URL is my company's genuine login page.",
             }
         }
+    }
 
 
 class TicketResponse(BaseModel):

@@ -94,19 +94,19 @@ export default function App() {
   // ── Read email from Outlook via Office.js ───────────────────────────────────
   const readEmail = (): Promise<{ subject: string; sender: string; body: string; attachmentCount: number; attachmentNames: string[] }> =>
     new Promise((resolve, reject) => {
-      const Office = (window as any).Office;
+      const Office = (window as unknown as { Office: typeof globalThis.Office }).Office;
       if (!Office?.context?.mailbox?.item) {
         return reject('Please open an email first, then click Analyze.');
       }
-      const item = Office.context.mailbox.item;
+      const item = Office.context.mailbox.item as Office.MessageRead;
       const subject = item.subject ?? '(No Subject)';
       const sender = item.from?.emailAddress ?? '';
-      const attachments = item.attachments ?? [];
+      const attachments: Office.AttachmentDetails[] = item.attachments ?? [];
       const attachmentCount = attachments.length;
       // Collect only the filename (name property) — never the content
-      const attachmentNames: string[] = attachments.map((a: any) => a.name ?? '');
+      const attachmentNames: string[] = attachments.map((a: Office.AttachmentDetails) => a.name ?? '');
 
-      item.body.getAsync(Office.CoercionType.Text, (res: any) => {
+      item.body.getAsync(Office.CoercionType.Text, (res: Office.AsyncResult<string>) => {
         if (res.status !== Office.AsyncResultStatus.Succeeded) {
           return reject('Could not read email body. Please try again.');
         }

@@ -122,13 +122,25 @@ _URL_RE = re.compile(
 
 
 def extract_urls_from_text(text: str) -> list[str]:
-    """Return deduplicated list of URLs found in *text*."""
-    found = _URL_RE.findall(text)
+    """
+    Return deduplicated list of URLs found in *text*.
+
+    Enhanced to handle:
+    - PDF text extractor line breaks inserted inside long URLs
+    - Trailing punctuation/brackets that are part of the sentence, not the URL
+    - Percent-encoded characters
+    """
+    # Pre-process: collapse line breaks that may have been inserted inside a URL
+    # e.g. "https://aws.amazon.com/billing\n/console" → "https://aws.amazon.com/billing/console"
+    cleaned = re.sub(r"(https?://[^\s]*)\n([^\s]*)", lambda m: m.group(1) + m.group(2), text)
+
+    found = _URL_RE.findall(cleaned)
     seen: set[str] = set()
     unique: list[str] = []
     for url in found:
-        url = re.sub(r"[.,;:!?)]+$", "", url)
-        if url not in seen:
+        # Strip trailing punctuation that is part of the sentence, not the URL
+        url = re.sub(r"[.,;:!?)\]>\"']+$", "", url)
+        if url and url not in seen:
             seen.add(url)
             unique.append(url)
     return unique

@@ -1,17 +1,28 @@
 """
 config.py
-─────────
+---------
 Centralised application settings loaded from environment variables (or a .env
 file in development).  Every other module imports the singleton `settings`
 object rather than calling os.environ directly.
 """
 
 from functools import lru_cache
+import logging
+import os
 from typing import Literal
 
-from pydantic import AnyHttpUrl, EmailStr, field_validator
+from pydantic import EmailStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import secrets
+
+
+
+_log = logging.getLogger(__name__)
+
+# Stable dev-only fallback. Using a fixed string (not random) ensures that
+# backend reloads during development do NOT invalidate existing JWTs.
+# NEVER keep this value in a production .env file -- the validator below
+# raises ValueError if this sentinel is detected in a production environment.
+_DEV_SECRET_KEY_SENTINEL = "phishguard-dev-secret-change-me-in-production-env"
 
 
 class Settings(BaseSettings):
@@ -35,20 +46,23 @@ class Settings(BaseSettings):
     # Synchronous URL for Alembic migrations (uses psycopg2 not asyncpg)
     SYNC_DATABASE_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/phishguard"
 
-    # ── Redis cache ────────────────────────────────────────────────────────────
+    # -- Redis cache ------------------------------------------------------------
     REDIS_URL: str = "redis://localhost:6379/0"
     NEWS_CACHE_TTL_SECONDS: int = 300        # 5 minutes
     STATS_CACHE_TTL_SECONDS: int = 300       # 5 minutes
 
-    # ── Auth / JWT ─────────────────────────────────────────────────────────────
-    # If no valid env var or config is found, generate an unguessable runtime key
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    # -- Auth / JWT -----------------------------------------------------------------
+    # Falls back to a fixed dev-only sentinel when SECRET_KEY is absent from .env.
+    # This means backend hot-reloads in development do NOT invalidate existing JWTs.
+    # The validator below raises a hard error if this sentinel is used in production.
+    # Always set a unique, cryptographically-random SECRET_KEY in your .env.
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", _DEV_SECRET_KEY_SENTINEL)
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     EMAIL_VERIFY_TOKEN_EXPIRE_HOURS: int = 24
 
-    # ── CORS ───────────────────────────────────────────────────────────────────
+    # -- CORS -------------------------------------------------------------------
     ALLOWED_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:5174",
@@ -101,14 +115,20 @@ class Settings(BaseSettings):
     # Base URL of the React frontend — used to build deep links in emails
     FRONTEND_BASE_URL: str = "http://localhost:5173"
 
-    # ── Validators ────────────────────────────────────────────────────────────
+    # ── Validators ─────────────────────────────────────────────────────────────────
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_must_be_set_in_production(cls, v: str, info) -> str:  # noqa: ANN001
-        # `info.data` is populated with already-validated fields
         env = info.data.get("ENVIRONMENT", "development")
-        if env == "production" and v == "CHANGE_ME_IN_PRODUCTION_USE_SECRETS_GENERATE":
-            raise ValueError("SECRET_KEY must be changed from the default in production")
+        if v == _DEV_SECRET_KEY_SENTINEL:
+            msg = (
+                "SECRET_KEY is not set in .env -- using the dev-only sentinel key. "
+                "All JWT tokens will be invalidated if the sentinel value changes. "
+                "Set a unique, cryptographically-random SECRET_KEY in your .env file."
+            )
+            if env == "production":
+                raise ValueError(f"PRODUCTION FATAL: {msg}")
+            _log.warning(msg)
         return v
 
 

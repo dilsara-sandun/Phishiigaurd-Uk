@@ -1,6 +1,6 @@
 """
 models/scan.py
-──────────────
+--------------
 SQLAlchemy ORM model for the `scans` table.
 One row per analysis request (URL, email, or domain).
 """
@@ -8,7 +8,7 @@ One row per analysis request (URL, email, or domain).
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, JSON, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,8 +48,9 @@ class Scan(Base):
     # Which model version produced this result
     model_version: Mapped[str] = mapped_column(String(64), nullable=False, default="xgb_v1")
 
-    # Full feature dict serialised as JSONB (for history detail view)
-    feature_values: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Full feature dict serialised as JSONB (for history detail view).
+    # with_variant falls back to plain JSON for SQLite (pytest) and uses JSONB for PostgreSQL.
+    feature_values: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
 
     # AI-generated plain-English explanation
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -61,7 +62,7 @@ class Scan(Base):
         index=True,
     )
 
-    # ── Relationships ──────────────────────────────────────────────────────────
+    # -- Relationships -------------------------------------------------------
     user: Mapped["User"] = relationship(  # noqa: F821
         "User",
         back_populates="scans",

@@ -10,8 +10,10 @@ Scan endpoints:
 
 import asyncio
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
+from typing import Any, cast, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 import magic
@@ -133,7 +135,7 @@ async def scan_url(
         result = {
             "label": "phishing",
             "score": threat.confidence,
-            "score_pct": int(round(threat.confidence * 100)),
+            "score_pct": round(threat.confidence * 100),
             "red_flags": [
                 FlagItem(
                     flag_type="red",
@@ -150,27 +152,36 @@ async def scan_url(
         result = ml_service.predict_url(url)
 
     # AI explanation (run concurrently with DB write)
+    r_label       = cast(Literal["legitimate", "phishing", "suspicious"], result["label"])
+    r_score       = cast(float, result["score"])
+    r_score_pct   = cast(int, result["score_pct"])
+    r_red_flags   = cast(list, result["red_flags"])
+    r_green_flags = cast(list, result["green_flags"])
+    r_model_ver   = cast(str, result["model_version"])
+    r_features    = cast(dict[str, Any], result.get("feature_values", {}))
+    r_shap        = cast(dict[str, Any] | None, result.get("shap_values"))
+
     explanation, scan_id = await asyncio.gather(
         ai_service.generate_explanation(
             input_value=url,
-            label=result["label"],
-            score_pct=result["score_pct"],
-            red_flags=_flag_dicts(result["red_flags"]),
-            green_flags=_flag_dicts(result["green_flags"]),
-            feature_values=result.get("shap_values"),
+            label=r_label,
+            score_pct=r_score_pct,
+            red_flags=_flag_dicts(r_red_flags),
+            green_flags=_flag_dicts(r_green_flags),
+            feature_values=r_shap,
         ),
         _persist_scan(
             db=db,
             user=current_user,
             scan_type="url",
             input_value=url,
-            label=result["label"],
-            score=result["score"],
-            model_version=result["model_version"],
-            feature_values=result.get("feature_values", {}),
+            label=r_label,
+            score=r_score,
+            model_version=r_model_ver,
+            feature_values=r_features,
             explanation=None,   # updated below after gather
-            red_flags=result["red_flags"],
-            green_flags=result["green_flags"],
+            red_flags=r_red_flags,
+            green_flags=r_green_flags,
         ),
     )
 
@@ -181,61 +192,56 @@ async def scan_url(
 
     logger.info(
         "URL scan: user=%s url=%s label=%s score=%.2f",
-        current_user.id, url[:80], result["label"], result["score"],
+        current_user.id, url[:80], r_label, r_score,
     )
 
     return ScanResult(
         scan_id=scan_id,
         input_value=url,
-        label=result["label"],
-        score=result["score"],
-        score_pct=result["score_pct"],
-        red_flags=result["red_flags"],
-        green_flags=result["green_flags"],
-        feature_values=result.get("feature_values"),
+        label=r_label,
+        score=r_score,
+        score_pct=r_score_pct,
+        red_flags=r_red_flags,
+        green_flags=r_green_flags,
+        feature_values=r_features,
         explanation=explanation,
-        model_version=result["model_version"],
+        model_version=r_model_ver,
         scanned_at=datetime.now(tz=timezone.utc),
     )
 
 
 # ── POST /scan/email ──────────────────────────────────────────────────────────
 
-@router.post(
-    "/email",
-    response_model=EmailScanResult,
-    status_code=status.HTTP_200_OK,
-    summary="Analyse raw email text for phishing indicators",
-)
-@limiter.limit(settings.SCAN_RATE_LIMIT)
-async def scan_email(
+async def _do_scan_email(
     request: Request,
     body: EmailScanRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    db: AsyncSession,
+    current_user: User,
+    pre_extracted_urls: list[str] | None = None,
 ) -> EmailScanResult:
     """
-    Accepts raw email text (subject + body paste).
-
-    Steps:
-      1. Extract all embedded URLs.
-      2. Score email text via TF-IDF + Logistic Regression.
-      3. Score each URL via XGBoost.
-      4. Combine scores (40% email + 60% max URL score).
-      5. Generate an AI explanation.
+    Internal helper that performs raw email text analysis or processes pre-extracted URLs.
     """
     raw_text = body.text
 
-    # Extract URLs
-    extracted_urls = email_service.extract_urls_from_text(raw_text)
+    # Extract URLs from visible text
+    text_urls = email_service.extract_urls_from_text(raw_text)
+    # Merge with pre-extracted annotation URLs (deduplicated)
+    seen: set[str] = set(text_urls)
+    extra_urls: list[str] = []
+    for u in (pre_extracted_urls or []):
+        if u not in seen:
+            seen.add(u)
+            extra_urls.append(u)
+    extracted_urls = text_urls + extra_urls
 
     # Score email text
     email_score_data = email_service.score_email_text("", raw_text)
 
-    # Score each URL
+    # Score each URL (cap at 50 to handle PDFs with many hyperlinks)
     url_results: list[ScanResult] = []
     url_scores: list[float] = []
-    for url in extracted_urls[:20]:   # cap at 20 URLs per email
+    for url in extracted_urls[:50]:
         url_ml = ml_service.predict_url(url)
         url_scan_id = await _persist_scan(
             db=db,
@@ -269,8 +275,9 @@ async def scan_email(
     overall_score = email_service.combine_email_and_url_scores(
         email_score_data["ml_score"], url_scores
     )
-    overall_score_pct = int(round(overall_score * 100))
-    overall_label = ml_service._score_to_label(overall_score)
+    overall_score_pct = round(overall_score * 100)
+    _raw_label    = ml_service._score_to_label(overall_score)
+    overall_label = cast(Literal["legitimate", "phishing", "suspicious"], _raw_label)
 
     # Merge email + URL flags
     all_red = email_score_data["red_flags"] + email_service._sender_domain_mismatch(raw_text, extracted_urls)
@@ -318,6 +325,31 @@ async def scan_email(
     )
 
 
+@router.post(
+    "/email",
+    response_model=EmailScanResult,
+    status_code=status.HTTP_200_OK,
+    summary="Analyse raw email text for phishing indicators",
+)
+@limiter.limit(settings.SCAN_RATE_LIMIT)
+async def scan_email(
+    request: Request,
+    body: EmailScanRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> EmailScanResult:
+    """
+    Accepts raw email text (subject + body paste).
+    """
+    return await _do_scan_email(
+        request=request,
+        body=body,
+        db=db,
+        current_user=current_user,
+        pre_extracted_urls=None,
+    )
+
+
 # ── POST /scan/email (file upload variant) ───────────────────────────────────
 
 @router.post(
@@ -338,10 +370,10 @@ async def scan_email_file(
     File size is limited to 1 MB.
     """
     filename = file.filename.lower() if file.filename else ""
-    if not (filename.endswith('.pdf') or filename.endswith('.txt')):
+    if not filename.endswith('.pdf'):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error: Invalid file format. Only PDF (.pdf) and Text (.txt) files are allowed. Please check again."
+            detail="Only PDF files (.pdf) are accepted for upload. Copy-paste plain email text into the Email Scan field instead."
         )
 
     MAX_SIZE = 1_048_576   # 1 MB
@@ -356,30 +388,93 @@ async def scan_email_file(
     mime = magic.Magic(mime=True)
     detected_mime = mime.from_buffer(raw_bytes)
     
-    allowed_mimes = {"text/plain", "application/pdf"}
+    allowed_mimes = {"application/pdf"}
     if detected_mime not in allowed_mimes:
         logger.warning("Rejected file upload with suspicious mime type: %s", detected_mime)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Error: Invalid file format. Only PDF (.pdf) and Text (.txt) files are allowed. Please check again."
+            detail="Only PDF files are accepted. The uploaded file's content does not appear to be a valid PDF."
         )
 
-    # Extract text based on file type
+    # ── Extract text and ALL hyperlinks from the PDF ──────────────────────────
     if detected_mime == "application/pdf":
         try:
             pdf_reader = PyPDF2.PdfReader(BytesIO(raw_bytes))
             combined = ""
-            for page in pdf_reader.pages:
-                text = page.extract_text()
-                if text:
-                    combined += text + "\n"
-            if not combined.strip():
-                combined = "No readable text found in PDF."
+            annotation_links: list[str] = []
+
+            for page_num, page in enumerate(pdf_reader.pages):
+                # 1. Extract visible text from this page
+                text = page.extract_text() or ""
+                combined += text + "\n"
+
+                # 2. Walk /Annots to find ALL hyperlinked URLs (hidden behind text)
+                #    This catches links like "Billing Address", "Click here", etc.
+                raw_annots = page.get("/Annots")
+                if raw_annots is None:
+                    continue
+                try:
+                    # May be an ArrayObject or an IndirectObject pointing to one
+                    if hasattr(raw_annots, "get_object"):
+                        raw_annots = raw_annots.get_object()
+
+                    for annot_ref in raw_annots:
+                        try:
+                            annot_obj = annot_ref.get_object() if hasattr(annot_ref, "get_object") else annot_ref
+                        except Exception:
+                            continue
+
+                        if annot_obj.get("/Subtype") != "/Link":
+                            continue
+
+                        action = annot_obj.get("/A")
+                        if action is None:
+                            continue
+
+                        try:
+                            action_obj = action.get_object() if hasattr(action, "get_object") else action
+                        except Exception:
+                            continue
+
+                        # Only process URI actions (not GoTo, Named, etc.)
+                        if action_obj.get("/S") != "/URI":
+                            continue
+
+                        uri_raw = action_obj.get("/URI")
+                        if not uri_raw:
+                            continue
+
+                        uri = str(uri_raw).strip()
+                        # Only keep valid http/https URLs; skip PDF bookmarks / mailto
+                        if re.match(r"^https?://", uri, re.IGNORECASE):
+                            annotation_links.append(uri)
+
+                except Exception as ann_err:
+                    logger.warning("PDF page %d annotation parse error: %s", page_num, ann_err)
+
+            # Deduplicate annotation links while preserving order
+            seen_annot: set[str] = set()
+            unique_annot_links: list[str] = []
+            for link in annotation_links:
+                if link not in seen_annot:
+                    seen_annot.add(link)
+                    unique_annot_links.append(link)
+
+            logger.info(
+                "PDF parse complete: %d chars text, %d annotation hyperlinks found",
+                len(combined), len(unique_annot_links),
+            )
+
+            if not combined.strip() and not unique_annot_links:
+                combined = "No readable text or hyperlinks found in this PDF."
+
         except Exception as e:
-            logger.error(f"Error parsing PDF: {e}")
+            logger.error("Error parsing PDF: %s", e, exc_info=True)
             raise HTTPException(status_code=400, detail="Could not extract text from PDF")
+
     else:
-        # Parse text file content
+        unique_annot_links = []
+        # Parse plain text file content
         try:
             combined = raw_bytes.decode("utf-8")
         except UnicodeDecodeError:
@@ -388,11 +483,12 @@ async def scan_email_file(
             except Exception:
                 raise HTTPException(status_code=400, detail="Could not decode text file content")
 
-    return await scan_email(
+    return await _do_scan_email(
         request=request,
         body=EmailScanRequest(text=combined),
         db=db,
         current_user=current_user,
+        pre_extracted_urls=unique_annot_links,
     )
 
 
@@ -488,7 +584,8 @@ async def scan_batch(
     Returns one ScanResult per URL in the same order as the input list.
     Batch requests are limited to 5 per hour (regardless of the per-URL limit).
     """
-    async def _scan_one(url: str) -> ScanResult:
+    results = []
+    for url in body.urls[:50]:
         result = ml_service.predict_url(url)
         scan_id = await _persist_scan(
             db=db,
@@ -503,22 +600,23 @@ async def scan_batch(
             red_flags=result["red_flags"],
             green_flags=result["green_flags"],
         )
-        return ScanResult(
-            scan_id=scan_id,
-            input_value=url,
-            label=result["label"],
-            score=result["score"],
-            score_pct=result["score_pct"],
-            red_flags=result["red_flags"],
-            green_flags=result["green_flags"],
-            feature_values=result.get("feature_values"),
-            explanation=None,   # omitted for batch to keep responses fast
-            model_version=result["model_version"],
-            scanned_at=datetime.now(tz=timezone.utc),
+        results.append(
+            ScanResult(
+                scan_id=scan_id,
+                input_value=url,
+                label=result["label"],
+                score=result["score"],
+                score_pct=result["score_pct"],
+                red_flags=result["red_flags"],
+                green_flags=result["green_flags"],
+                feature_values=result.get("feature_values"),
+                explanation=None,   # omitted for batch to keep responses fast
+                model_version=result["model_version"],
+                scanned_at=datetime.now(tz=timezone.utc),
+            )
         )
 
-    results = await asyncio.gather(*[_scan_one(u) for u in body.urls[:50]])
     logger.info(
         "Batch scan: user=%s urls=%d", current_user.id, len(body.urls)
     )
-    return list(results)
+    return results

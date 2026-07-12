@@ -129,6 +129,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Shutdown ───────────────────────────────────────────────────────────────
     logger.info("PhishGuard UK backend shutting down.")
+    bg_task.cancel()
+    try:
+        await bg_task
+    except asyncio.CancelledError:
+        pass  # expected — task was intentionally cancelled
 
 
 # ── Application factory ────────────────────────────────────────────────────────
@@ -160,8 +165,9 @@ def create_app() -> FastAPI:
 
     # ── CORS ─────────────────────────────────────────────────────────────────
     # Includes https://localhost:3000 for the Outlook mail-assistant task pane
-    # (mkcert generates a self-signed cert so Vite serves on HTTPS)
-    _cors_origins = [
+    # (mkcert generates a self-signed cert so Vite serves on HTTPS).
+    # ALLOWED_ORIGINS from .env overrides the defaults when set.
+    _default_cors_origins = [
         "http://localhost:5173",
         "http://localhost:5174",
         "http://localhost:5175",
@@ -170,6 +176,11 @@ def create_app() -> FastAPI:
         "http://localhost:3000",
         "http://localhost:3001",
     ]
+    _cors_origins = (
+        settings.ALLOWED_ORIGINS
+        if getattr(settings, "ALLOWED_ORIGINS", None)
+        else _default_cors_origins
+    )
     application.add_middleware(
         CORSMiddleware,
         allow_origins=_cors_origins,

@@ -299,7 +299,7 @@ def extract_features(url: str) -> dict[str, float]:
 
     # Parse with tldextract
     ext = tldextract.extract(url)
-    registered_domain = ext.registered_domain.lower() if ext.registered_domain else ""
+    registered_domain = ext.top_domain_under_public_suffix.lower() if ext.top_domain_under_public_suffix else ""
     subdomain = ext.subdomain.lower() if ext.subdomain else ""
     tld = ext.suffix.lower() if ext.suffix else ""
     fqdn = ext.fqdn.lower() if ext.fqdn else ""
@@ -321,8 +321,11 @@ def extract_features(url: str) -> dict[str, float]:
     f["slash_count"] = float(url.count("/"))
     f["at_sign_present"] = float("@" in url)
     f["double_slash_in_path"] = float("//" in path_part)
+    _ip_pattern = re.compile(r"^\d{1,3}(?:\.\d{1,3}){3}$")
+    _netloc = re.sub(r"^https?://", "", url).split("/")[0].split(":")[0]
     f["ip_address_present"] = float(
         bool(re.search(r"\d{1,3}(?:\.\d{1,3}){3}", registered_domain))
+        or bool(_ip_pattern.match(_netloc))
     )
     f["digit_count"] = float(sum(c.isdigit() for c in url))
     f["digit_ratio"] = f["digit_count"] / max(len(url), 1)

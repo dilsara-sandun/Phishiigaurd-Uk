@@ -1,0 +1,16 @@
+{
+  "_comment": "Root package.json — acts as a Vite/esbuild traversal boundary so the bundler stops climbing past this directory. Do not run 'npm install' here; see frontend/ and mail-assistant/ for their own package.json files.",
+  "name": "phishguard-uk-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "mail-assistant"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:mail": "npm run dev --prefix mail-assistant",
+    "lint:frontend": "npm run lint --prefix frontend",
+    "lint:mail": "npm run lint --prefix mail-assistant"
+  }
+}

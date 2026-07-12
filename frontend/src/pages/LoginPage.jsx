@@ -7,6 +7,17 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// Strip SQL injection characters from any user input before sending
+function sanitizeInput(val) {
+  return val
+    .replace(/['"`;\\]/g, '')
+    .replace(/--/g, '')
+    .replace(/\/\*/g, '')
+    .replace(/\*\//g, '')
+    .replace(/\b(OR|AND|DROP|SELECT|INSERT|DELETE|UPDATE|EXEC|UNION)\b/gi, '')
+    .trim()
+}
+
 // ── 2FA mode constants ────────────────────────────────────────────────────────
 const MODE_TOTP  = 'totp'   // Microsoft Authenticator / TOTP app
 const MODE_EMAIL = 'email'  // Email OTP fallback
@@ -57,8 +68,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    // Sanitize user inputs to prevent SQL Injection
+    const sanitizedEmail = sanitizeInput(email)
+    const sanitizedPassword = sanitizeInput(password)
+    
     setLoading(true)
-    const result = await login(email, password)
+    const result = await login(sanitizedEmail, sanitizedPassword)
     setLoading(false)
 
     if (result?.requires_2fa) {

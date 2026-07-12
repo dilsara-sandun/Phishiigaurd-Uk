@@ -1,6 +1,6 @@
 """
 models/news_cache.py
-────────────────────
+--------------------
 Cached news articles fetched from Hacker News / NewsData.io.
 A background task prunes rows older than 48 hours.
 """
@@ -8,7 +8,7 @@ A background task prunes rows older than 48 hours.
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, JSON, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -29,7 +29,8 @@ class NewsCache(Base):
     published_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # JSON array of keyword tags e.g. ["phishing", "UK banking"]
-    tags: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # with_variant falls back to plain JSON for SQLite (pytest) and uses JSONB for PostgreSQL.
+    tags: Mapped[list | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"), nullable=True)
 
     # Short excerpt / summary (may be None if API does not provide one)
     excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)

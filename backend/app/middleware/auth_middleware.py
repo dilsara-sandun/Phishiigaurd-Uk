@@ -83,6 +83,13 @@ async def get_current_user(
         raise _CREDENTIALS_EXCEPTION
     if not user.is_active:
         raise _INACTIVE_EXCEPTION
+        
+    from datetime import datetime, timezone
+    if user.locked_until and user.locked_until > datetime.now(tz=timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail="This account is currently locked.",
+        )
     return user
 
 

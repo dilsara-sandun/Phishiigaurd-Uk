@@ -204,30 +204,64 @@ async def authenticate_user(
     db: AsyncSession, email: str, password: str
 ) -> User:
     """
-    Validate credentials.
-
-    Raises ValueError with a generic message on any failure
-    (avoids leaking whether the email exists).
+    Validate credentials and handle lockout.
     """
     user = await get_user_by_email(db, email)
-    if user is None or not verify_password(password, user.password_hash):
+    if user is None:
         raise ValueError("Invalid email or password")
+        
+    now = datetime.now(tz=timezone.utc)
+    if user.locked_until:
+        # SQLite returns naive datetimes; normalise both sides for safe comparison.
+        _lu = user.locked_until
+        _now_cmp = now.replace(tzinfo=None) if _lu.tzinfo is None else now
+        if _lu > _now_cmp:
+            mins_left = int((_lu.replace(tzinfo=None) if _lu.tzinfo is None else _lu - now).total_seconds() // 60) + 1
+            raise ValueError(f"Account locked. Try again in {mins_left} minutes.")
+        
+    if not verify_password(password, user.password_hash):
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= 3:
+            user.locked_until = now + timedelta(minutes=10)
+            await db.flush()
+            raise ValueError("Account locked for 10 minutes due to 3 failed login attempts.")
+        await db.flush()
+        raise ValueError("Invalid email or password")
+        
     if not user.is_active:
         raise ValueError("This account has been deactivated")
+        
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    await db.flush()
     return user
 
 
 # ── Email verification ────────────────────────────────────────────────────────
 
-async def verify_otp(db: AsyncSession, email: str, otp: str) -> User:
+async def verify_otp(db: AsyncSession, email: str, otp: str, check_prefix: bool = False) -> User:
     """
     Mark a user as verified if the OTP is valid and not expired.
+    If check_prefix is True, it will allow verify_token in the format 'otp:extra_data'.
     """
     user = await get_user_by_email(db, email)
     if user is None:
         raise ValueError("User not found")
+        
+    now = datetime.now(tz=timezone.utc)
+    if user.locked_until:
+        # SQLite returns naive datetimes; normalise both sides for safe comparison.
+        _lu = user.locked_until
+        _now_cmp = now.replace(tzinfo=None) if _lu.tzinfo is None else now
+        if _lu > _now_cmp:
+            _delta = (_lu.replace(tzinfo=None) if _lu.tzinfo is None else _lu) - now.replace(tzinfo=None)
+            mins_left = int(_delta.total_seconds() // 60) + 1
+            raise ValueError(f"Account locked. Try again in {mins_left} minutes.")
     
-    if user.verify_token != otp:
+    # Extract actual token if it has extra data appended (e.g. for email change)
+    actual_token = user.verify_token.split(':')[0] if user.verify_token and check_prefix and ':' in user.verify_token else user.verify_token
+    
+    if actual_token != otp:
         user.verify_token_attempts += 1
         await db.flush()
         
@@ -235,19 +269,26 @@ async def verify_otp(db: AsyncSession, email: str, otp: str) -> User:
             user.verify_token = None
             user.verify_token_expires = None
             user.verify_token_attempts = 0
+            user.locked_until = now + timedelta(minutes=10)
             await db.flush()
-            raise ValueError("Too many failed attempts. This OTP has been invalidated. Please request a new one.")
+            raise ValueError("Too many failed attempts. Account locked for 10 minutes.")
             
         raise ValueError(f"Invalid OTP code. {3 - user.verify_token_attempts} attempts remaining.")
     
-    now = datetime.now(tz=timezone.utc)
-    if user.verify_token_expires and user.verify_token_expires < now:
-        raise ValueError("OTP has expired. Please request a new one.")
+    if user.verify_token_expires:
+        # SQLite returns offset-naive datetimes; PostgreSQL returns offset-aware.
+        # Normalise both sides to naive UTC for a safe comparison.
+        expires = user.verify_token_expires
+        _now = now.replace(tzinfo=None) if expires.tzinfo is None else now
+        if expires < _now:
+            raise ValueError("OTP has expired. Please request a new one.")
     
     user.is_verified = True
     user.verify_token = None
     user.verify_token_expires = None
     user.verify_token_attempts = 0
+    user.failed_login_attempts = 0
+    user.locked_until = None
     await db.flush()
     return user
 
@@ -276,8 +317,11 @@ async def reset_password_with_token(db: AsyncSession, token: str, new_password: 
         raise ValueError("Invalid reset token")
     
     now = datetime.now(tz=timezone.utc)
-    if user.verify_token_expires and user.verify_token_expires < now:
-        raise ValueError("Reset token has expired")
+    if user.verify_token_expires:
+        expires = user.verify_token_expires
+        _now_cmp = now.replace(tzinfo=None) if expires.tzinfo is None else now
+        if expires < _now_cmp:
+            raise ValueError("Reset token has expired")
     
     user.password_hash = hash_password(new_password)
     user.verify_token = None

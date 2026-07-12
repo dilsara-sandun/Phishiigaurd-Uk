@@ -1,6 +1,6 @@
 """
 models/threat_intel.py
-──────────────────────
+----------------------
 Table for storing live phishing URLs from external threat feeds
 (e.g., PhishTank, PhishStats, URLHaus).
 Provides a fast, indexed lookup for the scanner.
@@ -44,10 +44,14 @@ class ThreatIntel(Base):
         index=True
     )
 
-    # URL lookups use a DB-level MD5 unique index (created via SQL migration)
-    # This avoids PostgreSQL's BTree 2704-byte index limit for TEXT columns
+    # URL lookups use an index on the url column.
+    # NOTE: In production PostgreSQL an Alembic migration creates a separate
+    # MD5 hash index to bypass the 2704-byte BTree TEXT limit:
+    #   CREATE UNIQUE INDEX ix_threat_intel_url_md5 ON threat_intel (md5(url));
+    # The model-level index here is a plain column index for SQLite compatibility
+    # in the pytest in-memory test database.
     __table_args__ = (
-        Index("ix_threat_intel_url_hash", func.md5(url)),
+        Index("ix_threat_intel_url_hash", "url"),
     )
 
     def __repr__(self) -> str:

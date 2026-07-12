@@ -6,12 +6,17 @@ SQLAlchemy ORM model for the `users` table.
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, Integer, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.scan import Scan
+    from app.models.support_ticket import SupportTicket
 
 
 class User(Base):
@@ -46,6 +51,8 @@ class User(Base):
         DateTime(timezone=True), nullable=True, default=None
     )
     verify_token_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default='0')
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, default=None)
 
     # TOTP / Authenticator App (Microsoft Authenticator, Google Authenticator)
     totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)

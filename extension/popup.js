@@ -3,6 +3,16 @@
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
 
+/** Escape a value for safe HTML interpolation (prevents XSS). */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── On popup open: detect Gmail ───────────────────────────────────────────────
 
 (async () => {
@@ -115,7 +125,7 @@ function renderSiteResults(result) {
   secVal.style.color = hasSecurity ? '#22c55e' : '#ef4444';
 
   if (result.label === 'phishing') {
-    explanationText.innerHTML = `<span style="color:#ef4444;font-weight:bold;">⚠️ CRITICAL:</span> ${result.explanation}`;
+    explanationText.innerHTML = `<span style="color:#ef4444;font-weight:bold;">⚠️ CRITICAL:</span> ${esc(result.explanation)}`;
   } else {
     explanationText.textContent = result.explanation;
   }
@@ -124,13 +134,25 @@ function renderSiteResults(result) {
   result.green_flags.forEach(f => {
     const div = document.createElement('div');
     div.className = 'flag green';
-    div.innerHTML = `<span>✅</span> <span>${f.description}</span>`;
+    const icon = document.createElement('span');
+    icon.textContent = '\u2705';
+    const desc = document.createElement('span');
+    desc.textContent = f.description;
+    div.appendChild(icon);
+    div.append(' ');
+    div.appendChild(desc);
     flagsList.appendChild(div);
   });
   result.red_flags.forEach(f => {
     const div = document.createElement('div');
     div.className = 'flag red';
-    div.innerHTML = `<span>❌</span> <span>${f.description}</span>`;
+    const icon = document.createElement('span');
+    icon.textContent = '\u274c';
+    const desc = document.createElement('span');
+    desc.textContent = f.description;
+    div.appendChild(icon);
+    div.append(' ');
+    div.appendChild(desc);
     flagsList.appendChild(div);
   });
 }
@@ -228,22 +250,22 @@ function renderGmailResults(result, emailData) {
   const color = riskColor(result.overall_label);
   const icon = riskIcon(result.overall_label);
 
-  // Verdict banner
+  // Verdict banner — only safe constants (color strings from JS fns, score %) are interpolated
   document.getElementById('gmailVerdict').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:12px;
       background:${color}18;border:1px solid ${color}44;margin-bottom:12px;">
       <span style="font-size:22px">${icon}</span>
       <div style="flex:1">
         <div style="font-weight:800;font-size:13px;color:${color};text-transform:uppercase;letter-spacing:.08em">
-          ${result.overall_label}
+          ${esc(result.overall_label)}
         </div>
-        <div style="font-size:11px;color:#94a3b8">From: ${emailData.sender || 'Unknown'}</div>
+        <div style="font-size:11px;color:#94a3b8">From: ${esc(emailData.sender || 'Unknown')}</div>
         <div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">
-          ${emailData.subject || '(No Subject)'}
+          ${esc(emailData.subject || '(No Subject)')}
         </div>
       </div>
       <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:${color}">
-        ${result.overall_score_pct}%
+        ${esc(result.overall_score_pct)}%
       </div>
     </div>
   `;
@@ -257,13 +279,23 @@ function renderGmailResults(result, emailData) {
   (result.red_flags || []).forEach(f => {
     const d = document.createElement('div');
     d.className = 'flag red';
-    d.innerHTML = `<span>❌</span><span>${f.description}</span>`;
+    const icon = document.createElement('span');
+    icon.textContent = '\u274c';
+    const desc = document.createElement('span');
+    desc.textContent = f.description;
+    d.appendChild(icon);
+    d.appendChild(desc);
     flagsEl.appendChild(d);
   });
   (result.green_flags || []).forEach(f => {
     const d = document.createElement('div');
     d.className = 'flag green';
-    d.innerHTML = `<span>✅</span><span>${f.description}</span>`;
+    const icon = document.createElement('span');
+    icon.textContent = '\u2705';
+    const desc = document.createElement('span');
+    desc.textContent = f.description;
+    d.appendChild(icon);
+    d.appendChild(desc);
     flagsEl.appendChild(d);
   });
 
@@ -281,10 +313,10 @@ function renderGmailResults(result, emailData) {
       card.style.cssText = `background:${c}12;border:1px solid ${c}40;border-radius:8px;padding:10px 12px;margin-bottom:6px;`;
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${a.filename}</span>
-          <span style="font-size:10px;font-weight:800;color:${c};white-space:nowrap;margin-left:8px">${lbl}</span>
+          <span style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px">${esc(a.filename)}</span>
+          <span style="font-size:10px;font-weight:800;color:${c};white-space:nowrap;margin-left:8px">${esc(lbl)}</span>
         </div>
-        <div style="font-size:11px;color:#94a3b8;line-height:1.4">${a.description}</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.4">${esc(a.description)}</div>
       `;
       attachEl.appendChild(card);
     });
@@ -303,9 +335,10 @@ function renderGmailResults(result, emailData) {
       const c = riskColor(u.label);
       const item = document.createElement('div');
       item.style.cssText = `display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);margin-bottom:4px;`;
+      const displayUrl = u.url.length > 55 ? u.url.slice(0, 55) + '\u2026' : u.url;
       item.innerHTML = `
-        <span style="background:${c};color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap">${u.label.toUpperCase()}</span>
-        <span style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.url.length > 55 ? u.url.slice(0, 55) + '…' : u.url}</span>
+        <span style="background:${c};color:white;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;white-space:nowrap">${esc(u.label.toUpperCase())}</span>
+        <span style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(displayUrl)}</span>
       `;
       urlsEl.appendChild(item);
     });

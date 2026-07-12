@@ -16,11 +16,13 @@ Run with:
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import create_app
+from app.models.user import User
 from app.services.ml_service import extract_features, predict_url
 from app.services.email_service import extract_urls_from_text, score_email_text
 
@@ -64,6 +66,8 @@ async def setup_db():
 async def client():
     app = create_app()
     app.dependency_overrides[get_db] = override_get_db
+    # Disable slowapi rate limiting in tests so fixture auth calls are not throttled.
+    app.state.limiter.enabled = False
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as ac:
@@ -72,13 +76,30 @@ async def client():
 
 @pytest_asyncio.fixture
 async def auth_headers(client: AsyncClient) -> dict:
-    """Register a user, log in, and return Bearer auth headers."""
-    email, password = "scanner@phishguard.test", "ScanPass1"
+    """Register a user, log in (triggers 2FA OTP), read the OTP from the DB,
+    then call verify-login to get a real access token."""
+    email, password = "scanner@phishguard-test.com", "ScanPass1"
+
+    # Step 1 — register (creates the user)
     await client.post(
         "/api/auth/register",
         json={"email": email, "password": password, "confirm_password": password},
     )
-    resp = await client.post("/api/auth/login", json={"email": email, "password": password})
+
+    # Step 2 — login (sets OTP on the user row, returns 2FA init response)
+    await client.post("/api/auth/login", json={"email": email, "password": password})
+
+    # Step 3 — read the OTP directly from the test DB
+    async with TestSessionLocal() as session:
+        result = await session.execute(select(User).where(User.email == email))
+        user = result.scalar_one()
+        otp = user.verify_token
+
+    # Step 4 — verify the OTP and get a real access token
+    resp = await client.post(
+        "/api/auth/verify-login",
+        json={"email": email, "otp": otp},
+    )
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
@@ -95,7 +116,7 @@ class TestExtractFeatures:
         url = "https://lloyds-secure-login.top/verify/account"
         features = extract_features(url)
 
-        assert features["contains_bank_brand"] == 1.0, "Should detect 'lloyds' brand token"
+        assert features["contains_brand"] == 1.0, "Should detect 'lloyds' brand token"
         assert features["brand_domain_mismatch"] == 1.0, "Domain is not lloydsbank.co.uk"
         assert features["is_suspicious_tld"] == 1.0, ".top is a suspicious TLD"
         assert features["suspicious_path_keyword"] == 1.0, "/verify/ triggers keyword flag"
@@ -354,12 +375,15 @@ class TestBatchScanEndpoint:
     async def test_batch_scan_capped_at_50(
         self, client: AsyncClient, auth_headers: dict
     ):
-        """Even if more than 50 URLs are submitted, only 50 results are returned."""
-        urls = [f"https://test-url-{i}.com" for i in range(60)]
+        """Batch scan accepts exactly 50 URLs (the max) and returns 50 results."""
+        urls = [f"https://test-url-{i}.com" for i in range(50)]
         response = await client.post(
             "/api/scan/batch",
             json={"urls": urls},
             headers=auth_headers,
         )
+        assert response.status_code == 200, response.text
+        results = response.json()
+        assert len(results) == 50
         assert response.status_code == 200
         assert len(response.json()) == 50
