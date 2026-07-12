@@ -10,7 +10,7 @@ project_root = script_path.parents[2]
 backend_dir = project_root / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from app.services.ml_service import extract_features, UK_BANK_BRANDS
+from app.services.ml_service import extract_features
 
 # Data Paths
 ML_DIR = project_root / "ml"
@@ -29,24 +29,16 @@ def prep_dataset():
     
     if RAW_PHIUSIIL.exists():
         df_ph = pd.read_csv(RAW_PHIUSIIL, low_memory=False)
-        # PhiUSIIL has 'URL' and 'label' (1=phishing, 0=legitimate)
+        # PhiUSIIL has 'URL' and 'label'
         if 'URL' in df_ph.columns and 'label' in df_ph.columns:
             df_ph = df_ph[['URL', 'label']].rename(columns={'URL': 'url'})
+            df_ph['label'] = pd.to_numeric(df_ph['label'], errors='coerce').fillna(0).astype(int)
     
     if RAW_LEGITPHISH.exists():
         df_lg = pd.read_csv(RAW_LEGITPHISH, low_memory=False)
-        # url_features_extracted1 has 'URL' and 'ClassLabel' (0=phishing, 1=legit? typically 1 is phishing, let's normalize)
-        # We assume 1 is phishing, 0 is legitimate. Let's check a sample.
-        # But wait, looking at the previous head output:
-        # PhiUSIIL: 521848.txt,https://www.southbankmosaics.com... 1. Wait, normally legitimate is 0, phishing is 1. We will assume 1=phishing. 
-        # Actually, in PhiUSIIL, 1 is legitimate and 0 is phishing in some versions of the dataset. 
-        # Oh! If we don't know for sure, let's just use the features! 
-        # For PhiUSIIL: Let's assume 1=phishing for simplicity, we will correct if needed.
         if 'URL' in df_lg.columns and 'ClassLabel' in df_lg.columns:
             df_lg = df_lg[['URL', 'ClassLabel']].rename(columns={'URL': 'url', 'ClassLabel': 'label'})
-            # url_features_extracted1 (LegitPhish): ClassLabel=1 means phishing, 0 means legitimate.
-            # Normalize to ensure consistency: 1 = phishing, 0 = legitimate.
-            df_lg['label'] = df_lg['label'].apply(lambda x: 1 if int(x) == 1 else 0)
+            df_lg['label'] = pd.to_numeric(df_lg['label'], errors='coerce').fillna(0).astype(int)
     df_combined = pd.concat([df_ph, df_lg], ignore_index=True)
     if df_combined.empty:
         print("Error: No data found. Ensure raw_phiusiil.csv exists.")
