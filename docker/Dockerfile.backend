@@ -1,0 +1,42 @@
+# ── Stage 1: Build Dependencies ───────────────────────────────────────────────
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Install standard compiler tools and PostgreSQL development files
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install python dependencies into a local directory
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ── Stage 2: Final Runtime Image ─────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies (libmagic for file types, libpq for Postgres)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy local dependencies from builder
+COPY --from=builder /root/.local /root/.local
+
+# Copy backend application source code
+COPY backend /app
+
+# Copy ML models (ensures relative path "../ml/models" resolves from "/app")
+COPY ml /ml
+
+ENV PATH=/root/.local/bin:$PATH
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 8000
+
+# Runs migrations on startup before booting the server
+CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
