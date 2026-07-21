@@ -19,7 +19,6 @@ import BlogPage from './pages/BlogPage'
 import GamePage from './pages/GamePage'
 import PageAnalyzer from './pages/PageAnalyzer'
 import AccountSettingsPage from './pages/AccountSettingsPage'
-import MLResultsPage from './pages/MLResultsPage'
 
 export default function App() {
   return (
@@ -49,7 +48,6 @@ export default function App() {
             <Route path="history" element={<HistoryPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="settings" element={<AccountSettingsPage />} />
-            <Route path="ml-results" element={<MLResultsPage />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />

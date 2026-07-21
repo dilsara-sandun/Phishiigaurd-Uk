@@ -3,14 +3,13 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, ScanLine, History, LifeBuoy,
   Shield, ChevronLeft, ChevronRight,
-  Wifi, Globe, Mail, AlertTriangle, Settings, FileSearch, Brain
+  Wifi, Globe, Mail, AlertTriangle, Settings, FileSearch
 } from 'lucide-react'
 import clsx from 'clsx'
 
 const NAV = [
   { label: 'Overview',        icon: LayoutDashboard, to: '/dashboard' },
   { label: 'Page Analyzer',   icon: FileSearch,      to: '/analyzer'  },
-  { label: 'ML Results',      icon: Brain,           to: '/ml-results' },
   { label: 'Scan History',    icon: History,         to: '/history'   },
   { label: 'Support',         icon: LifeBuoy,        to: '/support'   },
 ]
