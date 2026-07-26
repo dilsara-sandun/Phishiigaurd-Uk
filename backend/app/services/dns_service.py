@@ -47,8 +47,8 @@ def _detect_typosquat(domain: str, brand_names: set[str]) -> tuple[bool, str]:
     Returns (is_typosquat, matched_brand).
     Only considers brands of 5+ characters to avoid false positives on short tokens.
     """
-    import tldextract
-    ext = tldextract.extract(domain)
+    from app.utils.tld import extract_tld
+    ext = extract_tld(domain)
     # Only use the registered domain name part (without TLD)
     domain_stem = ext.domain.lower() if ext.domain else ""
     if not domain_stem or len(domain_stem) < 4:
@@ -207,12 +207,12 @@ def _build_domain_flags(
         KNOWN_LEGITIMATE_DOMAINS,
         SUSPICIOUS_TLDS,
     )
-    import tldextract
+    from app.utils.tld import extract_tld
 
     red: list[FlagItem] = []
     green: list[FlagItem] = []
 
-    ext = tldextract.extract(domain)
+    ext = extract_tld(domain)
     tld = ext.suffix.lower() if ext.suffix else ""
     reg_domain = ext.registered_domain.lower() if ext.registered_domain else ""
     domain_lower = domain.lower()

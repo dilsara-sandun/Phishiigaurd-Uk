@@ -62,7 +62,7 @@ def prep_dataset():
 
     print(f"Cleaned unique URLs: {len(df_combined)}")
 
-    print("4. Extracting 27 core features...")
+    print("4. Extracting 28 core features...")
     # This aligns the training features with the FastAPI backend
     features_list = []
     

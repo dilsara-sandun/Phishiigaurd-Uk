@@ -27,7 +27,7 @@ xgboost>=2.1.0
 numpy>=2.0.0
 pandas>=2.2.3
 joblib>=1.4.0
-PyPDF2>=3.0.1                 # PDF text + annotation hyperlink extraction
+pypdf>=4.0.0                  # PDF text + annotation hyperlink extraction
 
 # ── shap — removed from runtime requirements ──────────────────────────────────
 # shap requires MSVC on Windows to compile its C extension and has no cp313

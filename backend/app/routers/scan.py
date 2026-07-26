@@ -17,7 +17,7 @@ from typing import Any, cast, Literal
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 import magic
-import PyPDF2
+import pypdf
 from io import BytesIO
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -399,7 +399,7 @@ async def scan_email_file(
     # ── Extract text and ALL hyperlinks from the PDF ──────────────────────────
     if detected_mime == "application/pdf":
         try:
-            pdf_reader = PyPDF2.PdfReader(BytesIO(raw_bytes))
+            pdf_reader = pypdf.PdfReader(BytesIO(raw_bytes))
             combined = ""
             annotation_links: list[str] = []
 

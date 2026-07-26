@@ -185,7 +185,7 @@ def _detect_html_link_deception(body_html: str) -> list[FlagItem]:
     if not body_html:
         return []
 
-    import tldextract
+    from app.utils.tld import extract_tld
 
     parser = _LinkParser()
     try:
@@ -203,8 +203,8 @@ def _detect_html_link_deception(body_html: str) -> list[FlagItem]:
             continue
 
         try:
-            href_domain = tldextract.extract(href).registered_domain.lower()
-            text_domain = tldextract.extract(url_in_text.group()).registered_domain.lower()
+            href_domain = extract_tld(href).registered_domain.lower()
+            text_domain = extract_tld(url_in_text.group()).registered_domain.lower()
         except Exception:
             continue
 
@@ -257,7 +257,7 @@ def _detect_display_name_mismatch(sender: str) -> list[FlagItem]:
     e.g. 'PayPal Security <attacker123@gmail.com>'
     """
     from app.services.ml_service import KNOWN_BRANDS, KNOWN_LEGITIMATE_DOMAINS
-    import tldextract
+    from app.utils.tld import extract_tld
 
     if not sender or "<" not in sender:
         return []
@@ -274,7 +274,7 @@ def _detect_display_name_mismatch(sender: str) -> list[FlagItem]:
     if not email_domain:
         return []
 
-    email_reg_domain = tldextract.extract(email_domain).registered_domain.lower()
+    email_reg_domain = extract_tld(email_domain).registered_domain.lower()
 
     # Check if the display name contains a known brand
     for brand in KNOWN_BRANDS:
@@ -331,11 +331,11 @@ def _detect_free_email_financial_claim(sender: str, body: str) -> list[FlagItem]
 
 def _detect_url_shorteners(urls: list[str]) -> list[FlagItem]:
     """Flag URLs from known shortener services that hide the real destination."""
-    import tldextract
+    from app.utils.tld import extract_tld
     found: list[str] = []
     for url in urls:
         try:
-            domain = tldextract.extract(url).registered_domain.lower()
+            domain = extract_tld(url).registered_domain.lower()
         except Exception:
             continue
         if domain in _URL_SHORTENERS:
@@ -416,7 +416,7 @@ def _sender_domain_mismatch(raw_email_text: str, extracted_urls: list[str]) -> l
     Works for all 100+ brands, not just UK banks.
     """
     from app.services.ml_service import KNOWN_BRANDS, KNOWN_LEGITIMATE_DOMAINS
-    import tldextract
+    from app.utils.tld import extract_tld
 
     text_lower = raw_email_text.lower()
     if not extracted_urls:
@@ -431,7 +431,7 @@ def _sender_domain_mismatch(raw_email_text: str, extracted_urls: list[str]) -> l
 
         for url in extracted_urls:
             try:
-                ext = tldextract.extract(url)
+                ext = extract_tld(url)
                 link_domain = ext.registered_domain.lower() if ext.registered_domain else ""
             except Exception:
                 continue

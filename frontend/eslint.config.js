@@ -19,7 +19,14 @@ export default [
     plugins: {},
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^(React|_)',
+          ignoreRestSiblings: true,
+        },
+      ],
       'no-console': 'off',
     },
   },

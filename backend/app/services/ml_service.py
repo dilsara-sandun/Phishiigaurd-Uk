@@ -23,7 +23,7 @@ from typing import Any
 
 import joblib
 import numpy as np
-import tldextract
+from app.utils.tld import extract_tld
 
 from app.config import settings
 from app.schemas.scan_schema import FlagItem
@@ -334,8 +334,8 @@ def extract_features(url: str) -> dict[str, float]:
     """
     url = url.strip()
 
-    # Parse with tldextract
-    ext = tldextract.extract(url)
+    # Parse with extract_tld
+    ext = extract_tld(url)
     registered_domain = ext.top_domain_under_public_suffix.lower() if ext.top_domain_under_public_suffix else ""
     subdomain = ext.subdomain.lower() if ext.subdomain else ""
     tld = ext.suffix.lower() if ext.suffix else ""
