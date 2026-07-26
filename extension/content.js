@@ -102,12 +102,24 @@ function extractPageData() {
   for (let form of forms) {
     let action = form.getAttribute('action') || '';
     let isMismatched = false;
+    const hasPassword = !!form.querySelector('input[type="password"]');
     if (action.startsWith('http')) {
       try {
-        let actionDomain = new URL(action).hostname;
-        if (actionDomain !== data.domain &&
-            !actionDomain.includes('google.com') &&
-            !actionDomain.includes('bing.com')) {
+        let actionHost = new URL(action).hostname.toLowerCase();
+        let currentHost = data.domain.toLowerCase();
+        
+        let isSameDomain = actionHost === currentHost ||
+                           actionHost.endsWith('.' + currentHost) ||
+                           currentHost.endsWith('.' + actionHost);
+                           
+        let isTrustedService = [
+          'list-manage.com', 'mailchimp.com', 'salesforce.com', 'marketo.com',
+          'hubspot.com', 'pardot.com', 'paypal.com', 'stripe.com', 'google.com',
+          'microsoft.com', 'bing.com', 'facebook.com', 'apple.com'
+        ].some(svc => actionHost.includes(svc));
+
+        // Only flag mismatched domain if it's NOT a trusted service AND contains password inputs
+        if (!isSameDomain && !isTrustedService && hasPassword) {
           isMismatched = true;
         }
       } catch (e) {}
@@ -115,7 +127,7 @@ function extractPageData() {
     data.forms.push({
       action: action,
       isMismatchedDomain: isMismatched,
-      hasPasswordInput: !!form.querySelector('input[type="password"]'),
+      hasPasswordInput: hasPassword,
       inputCount: form.querySelectorAll('input, select, textarea').length
     });
   }
@@ -123,10 +135,17 @@ function extractPageData() {
   // 4. Universal keyword detection (all brands + urgency)
   const bodyText = document.body ? document.body.innerText.toLowerCase() : '';
   KNOWN_BRAND_KEYWORDS.forEach(kw => {
-    if (bodyText.includes(kw)) data.suspiciousKeywords.push(kw);
+    if (kw.length < 3) return; // Skip 1-2 letter noise in body text like 'ee', 'x'
+    const regex = new RegExp(`\\b${kw}\\b`, 'i');
+    if (regex.test(bodyText)) {
+      data.suspiciousKeywords.push(kw);
+    }
   });
   URGENCY_WORDS.forEach(kw => {
-    if (bodyText.includes(kw)) data.urgencyKeywords.push(kw);
+    const regex = new RegExp(`\\b${kw}\\b`, 'i');
+    if (regex.test(bodyText)) {
+      data.urgencyKeywords.push(kw);
+    }
   });
 
   return data;

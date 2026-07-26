@@ -1,13 +1,16 @@
 import socket
 import logging
+from typing import Any
 from app.schemas.extension_schema import ExtensionPayload
 from app.schemas.scan_schema import FlagItem
 from app.services.ai_service import _call_gemini, _call_ollama
 from app.config import settings
-from app.services.ml_service import KNOWN_LEGITIMATE_DOMAINS
-# Flat set of all known legitimate domains (bank, tech, etc.) derived from the ml_service map
-LEGITIMATE_BANK_DOMAINS: set[str] = {d for domains in KNOWN_LEGITIMATE_DOMAINS.values() for d in domains}
-LEGITIMATE_TECH_DOMAINS = ["google.com", "microsoft.com", "apple.com", "amazon.com", "facebook.com", "cloudflare.com"]
+from app.services.ml_service import (
+    KNOWN_LEGITIMATE_DOMAINS,
+    KNOWN_BANK_DOMAINS,
+    KNOWN_TECH_DOMAINS,
+    predict_url
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,22 +23,32 @@ from app.models.threat_intel import ThreatIntel
 from datetime import datetime
 import ssl
 
-def get_ssl_details(hostname):
+def get_ssl_details(hostname: str) -> dict[str, Any] | None:
     try:
         context = ssl.create_default_context()
         with socket.create_connection((hostname, 443), timeout=3) as sock:
             with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                 cert = ssock.getpeercert()
-                issuer = dict(x[0] for x in cert['issuer'])
-                organization = issuer.get('organizationName', 'Unknown')
-                common_name = issuer.get('commonName', 'Unknown')
-                not_after = cert['notAfter']
-                expiry_date = datetime.strptime(not_after, '%b %d %H:%M:%S %Y %Z')
-                days_to_expiry = (expiry_date - datetime.now()).days
+                if not cert or "issuer" not in cert:
+                    return None
+                
+                issuer_dict: dict[str, str] = {}
+                for rdn in cert.get("issuer", ()):
+                    for key, val in rdn:
+                        issuer_dict[str(key)] = str(val)
+
+                organization = issuer_dict.get("organizationName", "Unknown")
+                common_name = issuer_dict.get("commonName", "Unknown")
+                not_after = str(cert.get("notAfter", ""))
+                expiry_days = 0
+                if not_after:
+                    expiry_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
+                    expiry_days = (expiry_date - datetime.now()).days
+
                 return {
                     "issuer": f"{organization} ({common_name})",
-                    "expiry_days": days_to_expiry,
-                    "is_valid": days_to_expiry > 0
+                    "expiry_days": expiry_days,
+                    "is_valid": expiry_days > 0,
                 }
     except Exception:
         return None
@@ -43,6 +56,10 @@ def get_ssl_details(hostname):
 async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict:
     red_flags = []
     green_flags = []
+    
+    # Run real-time XGBoost ML model prediction on the URL
+    ml_res = predict_url(payload.url)
+    ml_score = ml_res.get("score", 0.0)
     
     # 0. Get a User for persistence (Fallback to first user if needed)
     target_user = None
@@ -63,7 +80,7 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         red_flags.append(FlagItem(
             flag_type="red",
             flag_name="global_threat_intel_hit",
-            description=f"Identified in PhishGuard Intelligence ({intel_hit.source}). Known malicious infrastructure targeting {intel_hit.target_brand or 'UK Banking'}."
+            description=f"Identified in PhishGuard Intelligence ({intel_hit.source}). Known malicious infrastructure targeting {intel_hit.target_brand or 'Banking'}."
         ))
 
     # 1. SSL & DNS Check
@@ -75,22 +92,25 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
         pass
 
     domain_lower = payload.domain.lower()
-    is_bank = any(domain_lower == d or domain_lower.endswith("." + d) for d in LEGITIMATE_BANK_DOMAINS)
-    is_tech = any(domain_lower == d or domain_lower.endswith("." + d) for d in LEGITIMATE_TECH_DOMAINS)
-    is_whitelisted = is_bank or is_tech
+    is_bank = any(domain_lower == d or domain_lower.endswith("." + d) for d in KNOWN_BANK_DOMAINS)
+    is_tech = any(domain_lower == d or domain_lower.endswith("." + d) for d in KNOWN_TECH_DOMAINS)
+    all_known = {d for domains in KNOWN_LEGITIMATE_DOMAINS.values() for d in domains}
+    is_whitelisted = is_bank or is_tech or any(domain_lower == d or domain_lower.endswith("." + d) for d in all_known)
 
-    if ssl_info:
+    if ssl_info is not None:
+        issuer_str = str(ssl_info.get("issuer", ""))
+        expiry_days = int(ssl_info.get("expiry_days", 0))
         green_flags.append(FlagItem(
             flag_type="green",
             flag_name="valid_ssl_certificate",
-            description=f"Verified SSL from {ssl_info['issuer']}. Valid for {ssl_info['expiry_days']} days."
+            description=f"Verified SSL from {issuer_str}. Valid for {expiry_days} days."
         ))
         # High Risk: Free SSL on a non-whitelisted bank-branded site
-        if any(k in ssl_info['issuer'].lower() for k in ["let's encrypt", "zerossl"]) and not is_whitelisted:
+        if any(k in issuer_str.lower() for k in ["let's encrypt", "zerossl"]) and not is_whitelisted:
             red_flags.append(FlagItem(
                 flag_type="red",
                 flag_name="low_assurance_ssl",
-                description="Low-assurance SSL (Let's Encrypt) detected on a banking site. Potential 'lookalike' infrastructure."
+                description="Low-assurance SSL (Let's Encrypt / ZeroSSL) detected on a financial/banking site. Potential 'lookalike' infrastructure."
             ))
     else:
         red_flags.append(FlagItem(
@@ -99,14 +119,27 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
             description="No valid SSL certificate found. Critical vulnerability for financial transactions."
         ))
 
-    if is_whitelisted:
+    # Distinguish Bank vs Tech vs Legitimate Whitelisted Domain
+    if is_bank:
         green_flags.append(FlagItem(
             flag_type="green",
             flag_name="official_bank_domain",
-            description="Verified official UK banking domain."
+            description="Verified official banking domain."
+        ))
+    elif is_tech:
+        green_flags.append(FlagItem(
+            flag_type="green",
+            flag_name="official_tech_domain",
+            description="Verified official tech / cloud platform domain."
+        ))
+    elif is_whitelisted:
+        green_flags.append(FlagItem(
+            flag_type="green",
+            flag_name="verified_legitimate_domain",
+            description="Verified legitimate domain."
         ))
 
-    # 2. Evaluate Forms & Security
+    # 2. Evaluate Forms & Security (Only count password/credential mismatched forms)
     for form in payload.forms:
         if form.isMismatchedDomain:
             red_flags.append(FlagItem(
@@ -115,16 +148,17 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
                 description=f"Cross-domain data leakage: Form submits sensitive data to {form.action}"
             ))
             
-    # 3. Impersonation Risk
-    if payload.suspiciousKeywords and not is_whitelisted:
+    # 3. Impersonation Risk (Only flag if brand domain mismatch feature is triggered or explicit non-whitelisted brand misuse)
+    is_brand_mismatch = ml_res.get("feature_values", {}).get("brand_domain_mismatch", 0) > 0
+    if is_brand_mismatch and not is_whitelisted:
         red_flags.append(FlagItem(
             flag_type="red",
             flag_name="brand_impersonation_risk",
-            description=f"Unauthorized use of banking brands ({', '.join(payload.suspiciousKeywords)}) on external domain."
+            description="Unauthorized brand domain mismatch detected on external infrastructure."
         ))
         
-    # 4. Sentiment Analysis
-    if payload.urgencyKeywords:
+    # 4. Sentiment Analysis (Only on non-whitelisted sites)
+    if payload.urgencyKeywords and not is_whitelisted:
         red_flags.append(FlagItem(
             flag_type="red",
             flag_name="urgency_language",
@@ -177,29 +211,27 @@ async def analyse_live_site(payload: ExtensionPayload, db: AsyncSession) -> dict
             description="Page defines explicit security or content policies (CSP/HSTS) via meta tags."
         ))
 
-    # 6. Enterprise Scoring Logic (Refined Parameters)
+    # 6. Real-time Hybrid Scoring (ML Model + Live Infrastructure Signals)
     if is_whitelisted and not intel_hit:
         score = 0.01 
     else:
-        # Weighted Scoring
-        base_score = 0.15
-        if intel_hit: base_score += 0.80 # Automatic Phishing
-        if not ssl_info: base_score += 0.45 # Very High Risk
+        base_score = ml_score
+        if intel_hit: base_score = 0.95
+        if not ssl_info: base_score += 0.35
         
-        # Heuristic modifiers
         weights = {
-            "mismatched_form_action": 0.40,
-            "brand_impersonation_risk": 0.50,
-            "urgency_language": 0.25,
-            "low_assurance_ssl": 0.30,
-            "no_ssl_detected": 0.45
+            "mismatched_form_action": 0.35,
+            "brand_impersonation_risk": 0.40,
+            "urgency_language": 0.15,
+            "low_assurance_ssl": 0.25,
+            "no_ssl_detected": 0.35
         }
         
         score = base_score
         for flag in red_flags:
-            score += weights.get(flag.flag_name, 0.15)
+            score += weights.get(flag.flag_name, 0.10)
     
-    score = min(score, 1.0)
+    score = min(max(score, 0.0), 1.0)
     label = "phishing" if score >= 0.70 else "suspicious" if score >= 0.40 else "legitimate"
 
     # AI Report Generation

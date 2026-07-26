@@ -30,16 +30,17 @@ def _get_user_id_or_ip(request: Request) -> str:
 limiter = Limiter(key_func=_get_user_id_or_ip)
 
 
-def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+def rate_limit_exceeded_handler(request: Request, exc: Exception) -> JSONResponse:
     """
     Custom JSON error response when the rate limit is exceeded.
     Returns HTTP 429 with a descriptive message.
     """
+    detail_msg = getattr(exc, "detail", str(exc))
     return JSONResponse(
         status_code=429,
         content={
             "detail": (
-                f"Rate limit exceeded: {exc.detail}. "
+                f"Rate limit exceeded: {detail_msg}. "
                 "Scan endpoints are limited to 20 requests per hour per user."
             ),
             "retry_after": "3600",

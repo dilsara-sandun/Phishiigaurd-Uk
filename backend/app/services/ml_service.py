@@ -212,6 +212,11 @@ KNOWN_LEGITIMATE_DOMAINS: dict[str, set[str]] = {
     "klarna":           {"klarna.com"},
     "coinbase":         {"coinbase.com"},
     "binance":          {"binance.com"},
+    "nbk":              {"nbk.com"},
+    "nationstrust":     {"nationstrust.com"},
+    "qnb":              {"qnb.com"},
+    "adcb":             {"adcb.com"},
+    "standardchartered":{"standardchartered.com"},
     "bt":               {"bt.com"},
     "sky":              {"sky.com"},
     "virginmedia":      {"virginmedia.com"},
@@ -219,6 +224,38 @@ KNOWN_LEGITIMATE_DOMAINS: dict[str, set[str]] = {
     "ee":               {"ee.co.uk"},
     "vodafone":         {"vodafone.co.uk"},
     "talktalk":         {"talktalk.co.uk"},
+}
+
+KNOWN_BANK_DOMAINS: set[str] = {
+    "lloydsbank.co.uk", "lloydsbank.com", "lloyds.com", "halifax.co.uk", "bankofscotland.co.uk", "mbna.co.uk",
+    "barclays.co.uk", "barclays.com", "barclaycard.co.uk",
+    "natwest.com", "natwest.co.uk", "rbs.co.uk", "coutts.com", "ulsterbank.co.uk",
+    "hsbc.co.uk", "hsbc.com", "firstdirect.com",
+    "santander.co.uk", "cahoot.com",
+    "nationwide.co.uk",
+    "tsb.co.uk",
+    "monzo.com",
+    "starlingbank.com",
+    "revolut.com",
+    "co-operativebank.co.uk",
+    "virginmoney.com",
+    "metrobankonline.co.uk", "metrobank.co.uk",
+    "ybs.co.uk", "coventrybuildingsociety.co.uk", "skipton.co.uk",
+    "atombank.co.uk", "oaknorth.co.uk", "marcus.co.uk", "tescobank.com", "sainsburysbank.co.uk",
+    "gov.uk", "hmrc.gov.uk", "tvlicensing.co.uk", "nhs.uk", "nhs.net",
+    "chase.com", "citibank.com", "citi.com", "wellsfargo.com", "bankofamerica.com",
+    "nationstrust.com", "nbk.com", "qnb.com", "adcb.com", "standardchartered.com"
+}
+
+KNOWN_TECH_DOMAINS: set[str] = {
+    "google.com", "google.co.uk", "gmail.com", "googlemail.com", "googleapis.com",
+    "microsoft.com", "live.com", "outlook.com", "office.com", "microsoftonline.com",
+    "office365.com", "windows.com", "azure.com", "hotmail.com", "apple.com", "icloud.com",
+    "amazon.co.uk", "amazon.com", "aws.amazon.com", "amazontrust.com", "facebook.com",
+    "fb.com", "messenger.com", "instagram.com", "whatsapp.com", "twitter.com", "x.com",
+    "linkedin.com", "netflix.com", "paypal.com", "ebay.co.uk", "ebay.com", "dropbox.com",
+    "adobe.com", "zoom.us", "zoom.com", "docusign.com", "docusign.net", "slack.com",
+    "github.com", "github.io", "githubusercontent.com", "cloudflare.com"
 }
 
 # TLDs that are very rarely used by any legitimate brand or organisation
@@ -539,7 +576,7 @@ def predict_url(url: str) -> dict:
         return {
             "label": label,
             "score": round(rule_score, 4),
-            "score_pct": int(round(rule_score * 100)),
+            "score_pct": round(rule_score * 100),
             "red_flags": red_flags,
             "green_flags": green_flags,
             "feature_values": features,
@@ -575,7 +612,7 @@ def predict_url(url: str) -> dict:
     return {
         "label": label,
         "score": round(score, 4),
-        "score_pct": int(round(score * 100)),
+        "score_pct": round(score * 100),
         "red_flags": red_flags,
         "green_flags": green_flags,
         "feature_values": features,

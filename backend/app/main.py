@@ -166,6 +166,8 @@ def create_app() -> FastAPI:
     # ── CORS ─────────────────────────────────────────────────────────────────
     # Includes https://localhost:3000 for the Outlook mail-assistant task pane
     # (mkcert generates a self-signed cert so Vite serves on HTTPS).
+    # allow_origin_regex covers chrome-extension://<any-id> so the Chrome
+    # extension popup can reach the API regardless of its unpacked extension ID.
     # ALLOWED_ORIGINS from .env overrides the defaults when set.
     _default_cors_origins = [
         "http://localhost:5173",
@@ -175,6 +177,9 @@ def create_app() -> FastAPI:
         "https://localhost:3001",
         "http://localhost:3000",
         "http://localhost:3001",
+        # Chrome extensions loaded as unpacked send requests with a null Origin
+        # in some browser/OS combinations — allow it explicitly.
+        "null",
     ]
     _cors_origins = (
         settings.ALLOWED_ORIGINS
@@ -184,6 +189,8 @@ def create_app() -> FastAPI:
     application.add_middleware(
         CORSMiddleware,
         allow_origins=_cors_origins,
+        # Regex matches any chrome-extension:// origin regardless of extension ID
+        allow_origin_regex=r"chrome-extension://.*",
         allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -203,7 +210,9 @@ def create_app() -> FastAPI:
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data: https://images.unsplash.com; "
             "frame-src 'self' https://www.youtube.com; "
-            "connect-src 'self' https://api.phishstats.info;"
+            # Allow the Chrome extension popup and localhost frontend to connect
+            "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 "
+            "https://api.phishstats.info;"
         )
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"

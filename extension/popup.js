@@ -54,7 +54,7 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     chrome.tabs.sendMessage(tab.id, { action: 'analyzePage' }, async (pageData) => {
       if (chrome.runtime.lastError || !pageData) {
-        alert('PhishGuard: Could not extract page data. Please refresh the page and try again.');
+        alert('PhishGuard: Could not extract page data.\n\nPlease refresh the page (F5) and try again.\n\nReason: ' + (chrome.runtime.lastError?.message || 'Content script not ready'));
         resetUI();
         return;
       }
@@ -64,10 +64,12 @@ document.getElementById('analyzeBtn').addEventListener('click', async () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(pageData)
         });
-        if (!response.ok) throw new Error(`Backend error: ${response.status}`);
-        renderSiteResults(response = await response.json());
+        if (!response.ok) throw new Error(`Backend error: ${response.status} ${response.statusText}`);
+        const result = await response.json();
+        renderSiteResults(result);
       } catch (error) {
-        alert('PhishGuard Core Engine is offline. Ensure your backend is running on port 8000.');
+        console.error('[PhishGuard] Fetch error:', error);
+        alert('PhishGuard scan failed.\n\nError: ' + error.message + '\n\nMake sure:\n1. Backend is running on port 8000\n2. You refreshed the page before scanning');
         resetUI();
       }
     });
