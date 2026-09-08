@@ -17,6 +17,8 @@ from pathlib import Path
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 
+from typing import Any
+
 import joblib
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -75,7 +77,7 @@ _TRUSTED_TLDS: frozenset[str] = frozenset({
 # ── Model state ────────────────────────────────────────────────────────────────
 
 class _EmailModelState:
-    model: object = None
+    model: Any = None
     vectorizer: TfidfVectorizer | None = None
     loaded: bool = False
 
