@@ -9,7 +9,7 @@ Handles ingestion of live phishing URLs from external feeds.
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import delete, select
@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.threat_intel import ThreatIntel
-from app.services.ml_service import KNOWN_BRANDS as UK_BANK_BRANDS
 
 logger = logging.getLogger(__name__)
 
@@ -136,10 +135,11 @@ async def prune_old_threats(db: AsyncSession, days: int = 7):
     Remove threats that haven't been updated/seen in X days.
     """
     logger.info("Pruning threats older than %d days...", days)
-    threshold = datetime.now() - timedelta(days=days)
+    threshold = datetime.now(tz=timezone.utc) - timedelta(days=days)
     stmt = delete(ThreatIntel).where(ThreatIntel.created_at < threshold)
     result = await db.execute(stmt)
     await db.commit()
+    # pyrefly: ignore [missing-attribute]
     logger.info("Pruning complete. Removed %d stale entries.", result.rowcount)
 
 

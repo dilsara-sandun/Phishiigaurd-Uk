@@ -239,10 +239,16 @@ async def _do_scan_email(
     email_score_data = email_service.score_email_text("", raw_text)
 
     # Score each URL (cap at 50 to handle PDFs with many hyperlinks)
+    # Run all ML predictions concurrently in executor to avoid blocking the event loop
+    loop = asyncio.get_event_loop()
+    target_urls = extracted_urls[:50]
+    predictions = await asyncio.gather(
+        *[loop.run_in_executor(None, ml_service.predict_url, u) for u in target_urls]
+    )
+
     url_results: list[ScanResult] = []
     url_scores: list[float] = []
-    for url in extracted_urls[:50]:
-        url_ml = ml_service.predict_url(url)
+    for url, url_ml in zip(target_urls, predictions):
         url_scan_id = await _persist_scan(
             db=db,
             user=current_user,
@@ -256,20 +262,22 @@ async def _do_scan_email(
             red_flags=url_ml["red_flags"],
             green_flags=url_ml["green_flags"],
         )
+        url_results.append(
+            ScanResult(
+                scan_id=url_scan_id,
+                input_value=url,
+                label=url_ml["label"],
+                score=url_ml["score"],
+                score_pct=url_ml["score_pct"],
+                red_flags=url_ml["red_flags"],
+                green_flags=url_ml["green_flags"],
+                feature_values=url_ml.get("feature_values"),
+                explanation=None,
+                model_version=url_ml["model_version"],
+                scanned_at=datetime.now(tz=timezone.utc),
+            )
+        )
         url_scores.append(url_ml["score"])
-        url_results.append(ScanResult(
-            scan_id=url_scan_id,
-            input_value=url,
-            label=url_ml["label"],
-            score=url_ml["score"],
-            score_pct=url_ml["score_pct"],
-            red_flags=url_ml["red_flags"],
-            green_flags=url_ml["green_flags"],
-            feature_values=url_ml.get("feature_values"),
-            explanation=None,
-            model_version=url_ml["model_version"],
-            scanned_at=datetime.now(tz=timezone.utc),
-        ))
 
     # Combine scores
     overall_score = email_service.combine_email_and_url_scores(
@@ -584,9 +592,14 @@ async def scan_batch(
     Returns one ScanResult per URL in the same order as the input list.
     Batch requests are limited to 5 per hour (regardless of the per-URL limit).
     """
-    results = []
-    for url in body.urls[:50]:
-        result = ml_service.predict_url(url)
+    loop = asyncio.get_event_loop()
+    target_urls = body.urls[:50]
+    predictions = await asyncio.gather(
+        *[loop.run_in_executor(None, ml_service.predict_url, u) for u in target_urls]
+    )
+
+    results: list[ScanResult] = []
+    for url, result in zip(target_urls, predictions):
         scan_id = await _persist_scan(
             db=db,
             user=current_user,
@@ -619,4 +632,4 @@ async def scan_batch(
     logger.info(
         "Batch scan: user=%s urls=%d", current_user.id, len(body.urls)
     )
-    return results
+    return list(results)

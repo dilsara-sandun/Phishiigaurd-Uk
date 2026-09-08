@@ -10,6 +10,7 @@
   "scripts": {
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:mail": "npm run dev --prefix mail-assistant",
+    "dev:all": "npx concurrently \"npm run dev:frontend\" \"npm run dev:mail\"",
     "lint:frontend": "npm run lint --prefix frontend",
     "lint:mail": "npm run lint --prefix mail-assistant"
   }

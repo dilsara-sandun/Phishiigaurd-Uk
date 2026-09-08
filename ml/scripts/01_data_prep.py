@@ -10,6 +10,7 @@ project_root = script_path.parents[2]
 backend_dir = project_root / "backend"
 sys.path.insert(0, str(backend_dir))
 
+# pyrefly: ignore [missing-import]
 from app.services.ml_service import extract_features
 
 # Data Paths

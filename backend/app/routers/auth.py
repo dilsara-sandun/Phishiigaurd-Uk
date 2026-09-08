@@ -123,7 +123,7 @@ async def register(
     """
     try:
         user = await register_user(db, body.email, body.password)
-        await db.commit()  # <--- CRITICAL: Must commit to save the user!
+        await db.commit()
         await db.refresh(user)
         logger.info("New user registered: %s (id=%s)", user.email, user.id)
         
@@ -574,7 +574,6 @@ async def verify_login_totp(
         raise _auth_fail
 
     # Check lockout
-    from datetime import datetime, timezone, timedelta
     now = datetime.now(tz=timezone.utc)
     if user.locked_until and user.locked_until > now:
         mins_left = int((user.locked_until - now).total_seconds() // 60) + 1
@@ -741,7 +740,6 @@ async def change_password_endpoint(
     current_user: User = Depends(get_current_user),
 ) -> MessageResponse:
     # Check if already locked
-    from datetime import datetime, timezone, timedelta
     now = datetime.now(tz=timezone.utc)
     if current_user.locked_until and current_user.locked_until > now:
         response.delete_cookie("access_token", path="/")
@@ -752,7 +750,6 @@ async def change_password_endpoint(
             detail=f"Account locked. Try again in {mins_left} minutes.",
         )
 
-    # Validate current password
     from app.services.auth_service import verify_password, hash_password
     if not verify_password(body.current_password, current_user.password_hash):
         current_user.failed_login_attempts += 1

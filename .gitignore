@@ -161,3 +161,18 @@ ml/models/*.pkl
 ml/models/*.h5
 ml/models/*.json
 !ml/models/.gitkeep
+
+# PhishGuard Generated / Caches / Reports
+.tld_cache/
+*.tld_cache/
+phishguard.log*
+*.log
+*.log.*
+security_test_report.html
+
+# Supervisor / Academic artefacts (private — never commit)
+SUPERVISOR_MEETING_REPORT*.md
+SUPERVISOR_*.md
+
+# Backend scratch / temp development scripts
+backend/scratch/

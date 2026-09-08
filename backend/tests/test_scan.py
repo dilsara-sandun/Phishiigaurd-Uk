@@ -223,6 +223,19 @@ class TestPredictURL:
         result = predict_url("https://barclays-login.site/verify")
         assert result["label"] in valid_labels
 
+    def test_trained_model_accuracy_legitimate_and_phishing(self):
+        """When the XGBoost model is loaded, legitimate URLs score low and phishing URLs score high."""
+        from app.services.ml_service import load_models, _state
+        load_models()
+        if _state.loaded and _state.model is not None:
+            legit_result = predict_url("https://www.barclays.co.uk")
+            assert legit_result["label"] == "legitimate"
+            assert legit_result["score"] < 0.20
+
+            phish_result = predict_url("http://secure.natwest-verify-account.top/banking")
+            assert phish_result["label"] == "phishing"
+            assert phish_result["score"] >= 0.70
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Unit tests — email_service

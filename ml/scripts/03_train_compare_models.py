@@ -118,7 +118,7 @@ def train_and_compare():
         'XGBoost': xgb.XGBClassifier(
             n_estimators=200, max_depth=6, learning_rate=0.1,
             subsample=0.8, colsample_bytree=0.8,
-            use_label_encoder=False, eval_metric='logloss',
+            eval_metric='logloss',
             early_stopping_rounds=15, random_state=42,
         ),
         'Random Forest': RandomForestClassifier(
@@ -149,7 +149,7 @@ def train_and_compare():
         Xte = X_test_sc  if use_sc else X_test
 
         # XGBoost gets early stopping with validation set
-        if name == 'XGBoost':
+        if isinstance(model, xgb.XGBClassifier):
             model.fit(Xtr, y_train_res, eval_set=[(X_val, y_val)], verbose=20)
         else:
             model.fit(Xtr, y_train_res)

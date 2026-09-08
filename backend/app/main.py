@@ -18,6 +18,7 @@ Run in production:
 
 import logging
 import logging.config
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -199,7 +200,10 @@ def create_app() -> FastAPI:
     # ── Security Headers ─────────────────────────────────────────────────────
     @application.middleware("http")
     async def add_security_headers(request: Request, call_next):
+        t_start = time.perf_counter()
         response = await call_next(request)
+        process_ms = (time.perf_counter() - t_start) * 1000
+        response.headers["X-Process-Time"] = f"{process_ms:.2f}ms"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"

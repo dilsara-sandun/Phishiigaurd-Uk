@@ -417,7 +417,11 @@ def _score_to_label(score: float) -> str:
     return "legitimate"
 
 
-def _build_flags(features: dict[str, float], score: float) -> tuple[list[FlagItem], list[FlagItem]]:
+def _build_flags(
+    features: dict[str, float],
+    score: float,
+    registered_domain: str = "",
+) -> tuple[list[FlagItem], list[FlagItem]]:
     """Derive human-readable red and green flags from extracted features."""
     red: list[FlagItem] = []
     green: list[FlagItem] = []
@@ -486,7 +490,7 @@ def _build_flags(features: dict[str, float], score: float) -> tuple[list[FlagIte
             description="URL is abnormally long, which is often used to hide the real destination.",
         ))
 
-    # Green flags
+    # ── Green flags ────────────────────────────────────────────────────────────
     if features.get("has_https", 0):
         green.append(FlagItem(
             flag_type="green", flag_name="https_present",
@@ -502,8 +506,19 @@ def _build_flags(features: dict[str, float], score: float) -> tuple[list[FlagIte
             flag_type="green", flag_name="low_phishing_probability",
             description="Model assigns a very low phishing probability to this URL.",
         ))
+    # Known legitimate domain check — provides positive confirmation on verified safe sites
+    if registered_domain and score < 0.20:
+        if registered_domain in KNOWN_BANK_DOMAINS or registered_domain in KNOWN_TECH_DOMAINS:
+            green.append(FlagItem(
+                flag_type="green", flag_name="known_legitimate_domain",
+                description=(
+                    f"'{registered_domain}' is a verified legitimate domain of a "
+                    "known bank, government service, or major technology provider."
+                ),
+            ))
 
     return red, green
+
 
 
 # ── Model state (loaded once at FastAPI startup) ───────────────────────────────
@@ -568,11 +583,14 @@ def predict_url(url: str) -> dict:
       label, score, score_pct, red_flags, green_flags, feature_values, shap_values
     """
     features = extract_features(url)
+    # Extract registered domain for the green-flag check
+    _ext = extract_tld(url)
+    _registered_domain = _ext.top_domain_under_public_suffix.lower() if _ext.top_domain_under_public_suffix else ""
 
     if not _state.loaded or _state.model is None:
         rule_score = _heuristic_score(features)
         label = _score_to_label(rule_score)
-        red_flags, green_flags = _build_flags(features, rule_score)
+        red_flags, green_flags = _build_flags(features, rule_score, _registered_domain)
         return {
             "label": label,
             "score": round(rule_score, 4),
@@ -593,7 +611,12 @@ def predict_url(url: str) -> dict:
     else:
         feature_vector = np.array([list(features.values())], dtype=np.float32)
 
-    score = float(_state.model.predict_proba(feature_vector)[0][1])
+    # In the dataset (PhiUSIIL/LegitPhish) and trained XGBoost model:
+    # Class 0 = Phishing (malicious)
+    # Class 1 = Legitimate (benign)
+    # predict_proba returns [P(class 0), P(class 1)].
+    # Therefore, the phishing risk probability is at index 0.
+    score = float(_state.model.predict_proba(feature_vector)[0][0])
     label = _score_to_label(score)
 
     # SHAP contributions
@@ -602,12 +625,13 @@ def predict_url(url: str) -> dict:
         try:
             sv = _state.shap_explainer.shap_values(feature_vector)
             raw = sv[0] if isinstance(sv, list) else sv[0]
+            # Invert margin so positive contribution aligns with phishing risk
             names = _state.feature_names or list(features.keys())
-            shap_values = {n: round(float(v), 6) for n, v in zip(names, raw)}
+            shap_values = {n: round(float(-v), 6) for n, v in zip(names, raw)}
         except Exception as exc:
             logger.warning("SHAP computation failed: %s", exc)
 
-    red_flags, green_flags = _build_flags(features, score)
+    red_flags, green_flags = _build_flags(features, score, _registered_domain)
 
     return {
         "label": label,
@@ -625,6 +649,10 @@ def _heuristic_score(f: dict[str, float]) -> float:
     """
     Weighted rule-based score used when the model file is absent.
     Returns a float in [0, 1].
+
+    Individual signal weights are additive. A compound bonus is applied when
+    brand_domain_mismatch + is_suspicious_tld fire together — the dominant
+    'paypal-verify.xyz' class of phishing attack.
     """
     score = 0.0
     if f.get("brand_domain_mismatch"):    score += 0.45
@@ -636,4 +664,6 @@ def _heuristic_score(f: dict[str, float]) -> float:
     if f.get("subdomain_count", 0) > 3:   score += 0.10
     if f.get("url_entropy", 0) > 4.5:     score += 0.10
     if not f.get("has_https"):            score += 0.05
+    # Compound rule: brand impersonation on a suspicious TLD is a very strong signal
+    if f.get("brand_domain_mismatch") and f.get("is_suspicious_tld"):  score += 0.10
     return min(score, 1.0)

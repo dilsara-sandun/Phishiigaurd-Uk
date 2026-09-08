@@ -96,7 +96,14 @@ export default function App() {
     new Promise((resolve, reject) => {
       const Office = (window as unknown as { Office: typeof globalThis.Office }).Office;
       if (!Office?.context?.mailbox?.item) {
-        return reject('Please open an email first, then click Analyze.');
+        // Fallback for browser preview / direct testing outside Outlook
+        return resolve({
+          subject: 'URGENT: Verify Your Security Notice Immediately',
+          sender: 'security-alert@paypal-verify-update-account.com',
+          body: 'Dear User,\n\nWe detected suspicious activity on your account. Please verify your credentials immediately within 24 hours to prevent account suspension:\n\nhttp://paypal-verify-update-account.com/login?id=8392\n\nRegards,\nSecurity Operations',
+          attachmentCount: 1,
+          attachmentNames: ['Account_Verification_Document.pdf.exe'],
+        });
       }
       const item = Office.context.mailbox.item as Office.MessageRead;
       const subject = item.subject ?? '(No Subject)';

@@ -243,11 +243,10 @@ async def authenticate_user(
         
     now = datetime.now(tz=timezone.utc)
     if user.locked_until:
-        # SQLite returns naive datetimes; normalise both sides for safe comparison.
         _lu = user.locked_until
-        _now_cmp = now.replace(tzinfo=None) if _lu.tzinfo is None else now
-        if _lu > _now_cmp:
-            mins_left = int((_lu.replace(tzinfo=None) if _lu.tzinfo is None else _lu - now).total_seconds() // 60) + 1
+        _diff = (_lu.replace(tzinfo=timezone.utc) if _lu.tzinfo is None else _lu) - now
+        if _diff.total_seconds() > 0:
+            mins_left = int(_diff.total_seconds() // 60) + 1
             raise ValueError(f"Account locked. Try again in {mins_left} minutes.")
         
     is_correct, needs_upgrade = verify_password_with_upgrade(password, user.password_hash)

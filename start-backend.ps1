@@ -1,4 +1,4 @@
-﻿# ============================================================
+# ============================================================
 # PhishGuard UK - TERMINAL 1
 # Backend (FastAPI + ML Models)
 # Run: .\start-backend.ps1
@@ -17,7 +17,7 @@ $venvPython = Join-Path $backendDir "venv\Scripts\python.exe"
 
 if (-not (Test-Path $venvPython)) {
     Write-Host "[ERROR] venv not found at $backendDir\venv" -ForegroundColor Red
-    Write-Host "  Run: cd backend; python -m venv venv; .\venv\Scripts\activate; pip install -r ..\requirements.txt" -ForegroundColor Yellow
+    Write-Host "  Run: cd backend; python -m venv venv; .\venv\Scripts\activate; pip install -r requirements.txt" -ForegroundColor Yellow
     exit 1
 }
 
